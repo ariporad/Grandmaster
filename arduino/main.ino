@@ -22,7 +22,7 @@
 // State Variables
 //
 
-int cur_pos_x = 0;
+int cur_pos_x = 1;
 bool magnet_enabled = false;
 
 //
@@ -42,6 +42,7 @@ void setup()
 	Serial.setTimeout(50); // Make sure we don't spend too much time waiting for serial input
 
 	// Connect to the Motor Shield
+	// FIXME
 	assert(motorShield.begin(), "Couldn't connect to motor shield!");
 
 	// Configure other pins
@@ -102,8 +103,9 @@ void loop()
 			Serial.print(direction_x == FORWARD ? "FORWARD" : "BACKWARD");
 			Serial.println(")");
 			xMotor->step(steps_x, direction_x, MICROSTEP);
-			cur_pos_x = diff_pos_x;
+			cur_pos_x = new_pos_x;
 		}
 	}
+
 	digitalWrite(MAGNET_PIN, magnet_enabled ? HIGH : LOW)
 }
