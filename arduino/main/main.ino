@@ -9,14 +9,15 @@
 #define STATUS_LED_PIN 13
 
 // On the Adafruit Motor Shield
-#define X_MOTOR_PORT 4
+#define X_MOTOR_PORT 1
 
 // TODO: figure out these values
 #define STEPS_PER_REV 200
-#define REVS_PER_MINUTE 150
-#define STEPS_PER_SQUARE 200
+#define REVS_PER_MINUTE 1000
+#define STEPS_PER_SQUARE 1500
+#define STEP_MODE INTERLEAVE
 
-#define MAGNET_PIN 9
+#define MAGNET_PIN 2
 
 //
 // State Variables
@@ -42,14 +43,16 @@ void setup()
 	Serial.setTimeout(50); // Make sure we don't spend too much time waiting for serial input
 
 	// Connect to the Motor Shield
-	// FIXME
-	assert(motorShield.begin(), "Couldn't connect to motor shield!");
+	motorShield.begin();
 
 	// Configure other pins
 	pinMode(MAGNET_PIN, OUTPUT);
 
 	// Set the speed that motors will run at
 	xMotor->setSpeed(REVS_PER_MINUTE);
+
+  Serial.println("Ready!");
+  send_status();
 }
 
 void loop()
@@ -76,8 +79,9 @@ void loop()
 				Serial.println("Unknown Command!");
 				break;
 			}
+      send_status();
 		}
-		else
+		else if (cmd > 0)
 		{
 			int new_pos_x = max(1, min(8, cmd));
 			int diff_pos_x = new_pos_x - cur_pos_x;
@@ -98,14 +102,25 @@ void loop()
 			Serial.print(" (");
 			Serial.print(diff_pos_x);
 			Serial.print(" squares, ");
-			Serial.print(steps);
+			Serial.print(steps_x);
 			Serial.print(" steps ");
 			Serial.print(direction_x == FORWARD ? "FORWARD" : "BACKWARD");
 			Serial.println(")");
-			xMotor->step(steps_x, direction_x, MICROSTEP);
+			xMotor->step(steps_x, direction_x, STEP_MODE);
 			cur_pos_x = new_pos_x;
+      Serial.println("Done!");
+      send_status();
 		}
 	}
 
-	digitalWrite(MAGNET_PIN, magnet_enabled ? HIGH : LOW)
+	digitalWrite(MAGNET_PIN, magnet_enabled ? HIGH : LOW);
+}
+
+void send_status() {
+  Serial.print("Grandmaster OK: Magnet is ");
+  Serial.print(magnet_enabled ? "ENABLED (-2 to disable)" : "DISABLED (-1 to enable)");
+  Serial.print(" at Square #");
+  Serial.print(cur_pos_x);
+  Serial.print(" (1-8 to move)");
+  Serial.println("!"); 
 }
