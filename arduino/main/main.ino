@@ -14,7 +14,7 @@
 // TODO: figure out these values
 #define STEPS_PER_REV 200
 #define REVS_PER_MINUTE 1000
-#define STEPS_PER_SQUARE 1500
+#define STEPS_PER_SQUARE 750
 #define STEP_MODE INTERLEAVE
 
 #define MAGNET_PIN 2
