@@ -1,4 +1,3 @@
-from os import close
 from typing import *
 from enum import Enum
 from collections import defaultdict
@@ -101,7 +100,8 @@ class Detector:
             x, y = tag.center
             file = closest_item(size.files, x)
             rank = closest_item(size.ranks, y)
-            yield f"{file}{rank}", "P"  # currently everything is a white pawn
+            # Currently everything is a pawn, of either color
+            yield f"{file}{rank}", "p" if tag.tag_id >= 256 else "P"
 
 
 if __name__ == '__main__':
