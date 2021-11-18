@@ -3,8 +3,8 @@ from enum import Enum
 from collections import defaultdict
 from dataclasses import dataclass
 import cv2
-from .helpers import closest_item
-import camera.lib.apriltag.python.apriltag as apriltag
+from helpers import closest_item
+import lib.apriltag.python.apriltag as apriltag
 
 
 
