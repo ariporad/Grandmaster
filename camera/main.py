@@ -11,6 +11,8 @@ detector = Detector()
 
 if '--camera' in argv:
 	camera = cv2.VideoCapture(0)
+	camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+	camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 
 	# There's an annoying frame buffer we want to drain
 	for _ in range(15):
@@ -20,6 +22,9 @@ if '--camera' in argv:
 
 	if not success:
 		print("FAILED TO READ CAMERA!")
+		exit(1)
+	
+	cv2.imwrite("main.jpg", img)
 else:
 	img = cv2.imread('realboard.jpg')
 
