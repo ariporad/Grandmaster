@@ -4,12 +4,8 @@ from enum import Enum
 from collections import defaultdict
 from dataclasses import dataclass
 import cv2
-from camera.helpers import closest_item
-from helpers import closest
-import lib.apriltag.python.apriltag as apriltag
-
-APRILTAG_FAMILIES = ['tag36h11']
-TEST_IMAGE = 'chessboard.png'
+from .helpers import closest_item
+import camera.lib.apriltag.python.apriltag as apriltag
 
 
 class TagType(Enum):
@@ -24,9 +20,12 @@ class BoardSize:
 
     @property
     def board_size(self):
+        """
+        NOTE: These sizes may be negative in the board is upside-down
+        """
         return (
-            abs(self.bottom_right[0] - self.top_left[0]),
-            abs(self.bottom_right[1] - self.top_left[1])
+            self.bottom_right[0] - self.top_left[0],
+            self.bottom_right[1] - self.top_left[1]
         )
 
     @property
@@ -45,7 +44,7 @@ class BoardSize:
     def files(self):
         files = {}
         for num, letter in enumerate('abcdefgh', start=1):
-            files[letter] = self.board_size[0] + (self.square_size[0] * num)
+            files[letter] = self.top_left[0] + (self.square_size[0] * num)
         return files
 
 #
@@ -53,13 +52,10 @@ class BoardSize:
 #
 
 
-img = cv2.imread(TEST_IMAGE)
-
-
 class Detector:
     apriltag: apriltag.Detector
 
-    def __init__(self):
+    def __init__(self, APRILTAG_FAMILIES=['tag36h11']):
         self.apriltag = apriltag.Detector(
             apriltag.DetectorOptions(families=APRILTAG_FAMILIES),
             searchpath='lib/apriltag/build/lib')
@@ -76,16 +72,14 @@ class Detector:
         # Conventionally, chess boards are drawn with white (Rank 1) at the bottom.
         # Tag IDs: I0 (bottom right) = #0, α0 (bottom left) = #1, α9 (top left) = #2, I9 (top right) = #3
 
-        bottom_right_I0 = tags[0]
+        bottom_right_I0 = tags[TagType.BOARD][0]
         # bottom_left_a0 = tags[1]
-        top_left_a9 = tags[2]
+        top_left_a9 = tags[TagType.BOARD][2]
         # top_right_I9 = tags[3]
 
         # or bottom_left_a0 is None or top_right_I9 is None:
         if bottom_right_I0 is None or top_left_a9 is None:
             raise ValueError("Couldn't find board corners!")
-
-        print("Found all board tracking tags!")
 
         return BoardSize(tuple(top_left_a9.center), tuple(bottom_right_I0.center))
 
@@ -103,8 +97,18 @@ class Detector:
 
         size = self.calculate_board_dimensions(tags)
 
-        for tag in sorted(tags[TagType.PIECE].items()):
+        for tag in sorted(tags[TagType.PIECE].values()):
             x, y = tag.center
             file = closest_item(size.files, x)
             rank = closest_item(size.ranks, y)
-            yield f"{file}{rank}"
+            yield f"{file}{rank}", "P"  # currently everything is a white pawn
+
+
+if __name__ == '__main__':
+    from sys import argv
+    img = cv2.imread(argv[1] if len(argv) >= 2 else 'chessboard.png')
+    pieces = Detector().detect_piece_positions(img)
+
+    print("Detected Pieces!")
+    for location, letter in pieces:
+        print(f"{letter} @ {location}")
