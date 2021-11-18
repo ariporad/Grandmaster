@@ -4,7 +4,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 import cv2
 from helpers import closest_item
-import lib.apriltag.python.apriltag as apriltag
+from apriltag import detect_apriltag, apriltag
 
 
 
@@ -53,10 +53,10 @@ class BoardSize:
 
 
 class Detector:
-    apriltag: apriltag.Detector
+    apriltag_family: str
 
     def __init__(self, apriltag_family='tag36h11'):
-        self.apriltag = apriltag.Detector(options=apriltag.DetectorOptions(families=apriltag_family))
+        self.apriltag_family = apriltag_family
 
     def get_tag_type(self, tag_id: int) -> TagType:
         if tag_id < 128:
@@ -83,7 +83,7 @@ class Detector:
 
     def detect_piece_positions(self, img):
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-        detections, dimg = self.apriltag.detect(gray, return_image=True)
+        detections = detect_apriltag(self.apriltag_family, gray)
 
         tags: Dict[
             TagType,
