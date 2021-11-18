@@ -4,7 +4,8 @@ from collections import defaultdict
 from dataclasses import dataclass
 import cv2
 from .helpers import closest_item
-import dt_apriltags as apriltag
+import camera.lib.apriltag.python.apriltag as apriltag
+
 
 
 class TagType(Enum):
@@ -55,7 +56,7 @@ class Detector:
     apriltag: apriltag.Detector
 
     def __init__(self, apriltag_family='tag36h11'):
-        self.apriltag = apriltag.Detector(families=apriltag_family)
+        self.apriltag = apriltag.Detector(options=apriltag.DetectorOptions(families=apriltag_family))
 
     def get_tag_type(self, tag_id: int) -> TagType:
         if tag_id < 128:

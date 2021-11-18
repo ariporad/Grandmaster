@@ -17,7 +17,7 @@ class CameraCalibration:
 
 def calibrate(images, draw=False):
     # Define the dimensions of checkerboard
-    CHESSBOARD_SIZE_SQUARES = (8, 8)
+    CHESSBOARD_SIZE_SQUARES = (4, 4)
 
     # stop the iteration when specified
     # accuracy, epsilon, is reached or
@@ -84,22 +84,17 @@ def calibrate(images, draw=False):
 
 
 if __name__ == '__main__':
-    cam = cv2.VideoCapture(0)
+    image = cv2.imread("realboard.jpg")
 
-    # For some reason the first frame is always all black, so throw it away
-    cam.read()
-
-    success, frame = cam.read()
-
-    if not success:
-        print("FAILED to read camera!")
+    if image is None:
+        print("FAILED to read image!")
         exit(1)
 
-    cv2.imshow("frame", frame)
+    cv2.imshow("frame", image)
     cv2.waitKey(0)
 
     try:
-        calibration = calibrate([frame])
+        calibration = calibrate([image], draw=True)
 
         print("Successfully Calibrated Camera!")
         print("\nCamera Matrix:")
@@ -112,7 +107,7 @@ if __name__ == '__main__':
         print(calibration.translation)
 
         undistorted = cv2.undistort(
-            frame, calibration.camera_matrix, calibration.distortion)
+            image, calibration.camera_matrix, calibration.distortion)
 
         cv2.imshow("undistorted", undistorted)
         cv2.waitKey(0)
