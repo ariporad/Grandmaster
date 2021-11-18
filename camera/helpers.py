@@ -1,14 +1,14 @@
 from math import inf
 
 
-def closest(lst, target, key=lambda x: x):
+def closest_item(dict, target):
     closest_diff = inf
-    closest_item = None
+    closest_key = None
 
-    for item in lst:
-        diff = abs(key(item) - target)
+    for key, value in dict.items():
+        diff = abs(value - target)
         if diff < closest_diff:
             closest_diff = diff
-            closest_item = item
+            closest_key = key
 
-    return closest_item
+    return closest_key
