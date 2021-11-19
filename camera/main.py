@@ -53,17 +53,25 @@ print("Moving:", move)
 gantry = Serial(port='/dev/ttyACM0', baudrate=115200, timeout=0.1)
 # board = Serial(port='/dev/whatever', baudrate=115200, timeout=0.1)
 
+print("Move to Square:", chess.square_name(move.from_square), "=", move.from_square)
 gantry.write(bytes(str(move.from_square), 'utf-8'))
 sleep(10)
 
+print("SKIPPING: Turn On Magnet")
 # board.write(bytes('1', 'utf-8'))
 # sleep(2)
+
+print("Move to Square:", chess.square_name(move.to_square), "=", move.to_square)
 
 gantry.write(bytes(str(move.to_square), 'utf-8'))
 sleep(10)
 
+print("SKIPPING: Turn Off Magnet")
+
 # board.write(bytes('0', 'utf-8'))
 # sleep(2)
 
+print("Moving Away")
+
 gantry.write(bytes(str(move.to_square - 1), 'utf-8'))
-sleep(10)
+print("Done")
