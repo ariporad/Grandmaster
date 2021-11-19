@@ -95,7 +95,7 @@ class Detector:
 
         size = self.calculate_board_dimensions(tags)
 
-        for tag in sorted(tags[TagType.PIECE].values()):
+        for tag in sorted(tags[TagType.PIECE].values(), key=lambda tag: tag.tag_id):
             x, y = tag.center
             file = closest_item(size.files, x)
             rank = closest_item(size.ranks, y)
