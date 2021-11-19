@@ -64,6 +64,7 @@ print("SKIPPING: Turn On Magnet")
 print("Move to Square:", chess.square_name(move.to_square), "=", move.to_square)
 
 gantry.write(bytes(str(move.to_square), 'utf-8'))
+gantry.flush()
 sleep(10)
 
 print("SKIPPING: Turn Off Magnet")
@@ -74,4 +75,5 @@ print("SKIPPING: Turn Off Magnet")
 print("Moving Away")
 
 gantry.write(bytes(str(move.to_square - 1), 'utf-8'))
+gantry.flush()
 print("Done")
