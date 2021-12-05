@@ -99,9 +99,7 @@ class Detector:
             x, y = tag.center
             file = closest_item(size.files, x)
             rank = closest_item(size.ranks, y)
-            # Currently everything is a pawn, of either color
-            yield f"{file}{rank}", "p" if tag.tag_id >= 256 else "P"
-
+            yield f"{file}{rank}", tag.tag_id
 
 if __name__ == '__main__':
     from sys import argv
