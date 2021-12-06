@@ -17,13 +17,13 @@ class CameraCalibration:
 
 def calibrate(images, draw=False):
     # Define the dimensions of checkerboard
-    CHESSBOARD_SIZE_SQUARES = (4, 4)
+    CHESSBOARD_SIZE_SQUARES = (8, 8)
 
     # stop the iteration when specified
     # accuracy, epsilon, is reached or
     # specified number of iterations are completed.
     criteria = (cv2.TERM_CRITERIA_EPS +
-                cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+                cv2.TERM_CRITERIA_MAX_ITER, 3, 0.001)
 
     # Vectors for storing data for successfully processed images
     known_points_3D = []
@@ -84,17 +84,25 @@ def calibrate(images, draw=False):
 
 
 if __name__ == '__main__':
-    image = cv2.imread("realboard.jpg")
+    camera = cv2.VideoCapture(0)
+    camera.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+    camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+    camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+    success, image = camera.read()
+    cv2.imwrite('calibration_raw.jpg', image)
+    # image = cv2.imread("realboard.jpg")
 
-    if image is None:
+    if not success or image is None:
         print("FAILED to read image!")
         exit(1)
+    
+    print("Captured Image!")
 
-    cv2.imshow("frame", image)
-    cv2.waitKey(0)
+    # cv2.imshow("frame", image)
+    # cv2.waitKey(0)
 
     try:
-        calibration = calibrate([image], draw=True)
+        calibration = calibrate([image], draw=False)
 
         print("Successfully Calibrated Camera!")
         print("\nCamera Matrix:")
@@ -109,7 +117,10 @@ if __name__ == '__main__':
         undistorted = cv2.undistort(
             image, calibration.camera_matrix, calibration.distortion)
 
-        cv2.imshow("undistorted", undistorted)
-        cv2.waitKey(0)
+        cv2.imwrite('calibration_undistorted.jpg', undistorted)
+
+        # cv2.imshow("undistorted", undistorted)
+        # cv2.waitKey(0)
     finally:
-        cv2.destroyAllWindows()
+        pass
+        # cv2.destroyAllWindows()

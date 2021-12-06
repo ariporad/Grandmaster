@@ -1,3 +1,6 @@
+from typing import *
+from collections import defaultdict
+
 try:
 	import lib.apriltag.python.apriltag as apriltag
 	is_linux = False
@@ -5,9 +8,17 @@ except ModuleNotFoundError:
 	import dt_apriltags as apriltag
 	is_linux = True
 
-def detect_apriltag(family: str, image) -> apriltag.Detection:
+def scan_for_apriltags(family: str, image) -> apriltag.Detection:
 	if is_linux:
 		# TODO: use family
 		return apriltag.Detector().detect(image)
 	else:
 		return apriltag.Detector(options=apriltag.DetectorOptions(families=family)).detect(image)
+
+def detect_apriltags(family: str, image) -> Dict[int, Optional[apriltag.Detection]]:
+	tags: Dict[int, Optional[apriltag.Detection]] = defaultdict(lambda: None)
+	
+	for tag in scan_for_apriltags(family, image):
+		tags[tag.tag_id] = tag
+	
+	return tags

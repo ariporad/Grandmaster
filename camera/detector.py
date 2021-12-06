@@ -4,7 +4,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 import cv2
 from helpers import closest_item
-from apriltag import detect_apriltag, apriltag
+from apriltag import detect_apriltags, apriltag
 
 
 
@@ -53,10 +53,13 @@ class BoardSize:
 
 
 class Detector:
-    apriltag_family: str
+    piece_apriltag_family = 'tag36h11'
+    corner_apriltag_family = 'tag36h11'
 
-    def __init__(self, apriltag_family='tag36h11'):
-        self.apriltag_family = apriltag_family
+    CORNER_I0_TAG_ID = 0  # bottom right
+    CORNER_a0_TAG_ID = 1  # bottom left
+    CORNER_a9_TAG_ID = 2  # top left
+    CORNER_I9_TAG_ID = 3  # top right
 
     def get_tag_type(self, tag_id: int) -> TagType:
         if tag_id < 128:
@@ -64,15 +67,14 @@ class Detector:
         else:
             return TagType.PIECE
 
-    def calculate_board_dimensions(self, tags: Dict[TagType, Dict[int, Optional[apriltag.Detection]]]):
+    def calculate_board_dimensions(self, tags: Dict[int, Optional[apriltag.Detection]]):
         # Board corner tracking tags are centered in squares one rank and one
         # form off the edge of the board (α0, I0, α9, I9).
         # Conventionally, chess boards are drawn with white (Rank 1) at the bottom.
-        # Tag IDs: I0 (bottom right) = #0, α0 (bottom left) = #1, α9 (top left) = #2, I9 (top right) = #3
 
-        bottom_right_I0 = tags[TagType.BOARD][0]
+        bottom_right_I0 = tags[self.CORNER_I0_TAG_ID]
         # bottom_left_a0 = tags[1]
-        top_left_a9 = tags[TagType.BOARD][2]
+        top_left_a9 = tags[self.CORNER_a9_TAG_ID]
         # top_right_I9 = tags[3]
 
         # or bottom_left_a0 is None or top_right_I9 is None:
@@ -83,19 +85,25 @@ class Detector:
 
     def detect_piece_positions(self, img):
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-        detections = detect_apriltag(self.apriltag_family, gray)
+        tags = detect_apriltags(self.corner_apriltag_family, gray)
 
-        tags: Dict[
-            TagType,
-            Dict[int, Optional[apriltag.Detection]]
-        ] = defaultdict(lambda: defaultdict(lambda: None))
+        top_left     = tags[self.CORNER_a9_TAG_ID].center
+        top_right    = tags[self.CORNER_I9_TAG_ID].center
+        bottom_left  = tags[self.CORNER_a0_TAG_ID].center
+        bottom_right = tags[self.CORNER_I0_TAG_ID].center
 
-        for tag in detections:
-            tags[self.get_tag_type(tag.tag_id)][tag.tag_id] = tag
+        # If the image is perfectly aligned all of these will be zero
+        dx_left = top_left[0] - bottom_left[0]
+        dx_right = top_right[0] - bottom_right[0]
+        dy_top = top_left[1] - top_right[1]
+        dy_bottom = bottom_left[1] - bottom_right[1]
+
+        dx_mean = (dx_left + dx_right) / 2
+        dy_mean = (dy_top + dy_bottom) / 2
 
         size = self.calculate_board_dimensions(tags)
 
-        for tag in sorted(tags[TagType.PIECE].values(), key=lambda tag: tag.tag_id):
+        for tag in sorted((tag for tag_id, tag in tags.items() if tag_id >= 128), key=lambda tag: tag.tag_id):
             x, y = tag.center
             file = closest_item(size.files, x)
             rank = closest_item(size.ranks, y)

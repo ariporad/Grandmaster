@@ -1,20 +1,21 @@
 from random import choice
-from camera.detector import Detector
-from camera.tracker import Tracker
+from detector import Detector
+from tracker import Tracker
 
 class ChessController:
 	detector: Detector
 	tracker: Tracker
 	
 	def __init__(self):
-		pass
+		self.detector = Detector()
+		self.tracker = Tracker()
 
 	def get_current_board(self, img):
 		piece_positions = self.detector.detect_piece_positions(img)
 		return self.tracker.generate_board(piece_positions)
 
-	def pick_moves(self, board):
-		return choice(board.legal_moves)
+	def pick_move(self, board):
+		return choice(list(board.legal_moves))
 
 	def make_move(self, img):
 		board = self.get_current_board(img)
