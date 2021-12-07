@@ -32,10 +32,12 @@ class CameraCalibration:
 
 # From: https://www.geeksforgeeks.org/camera-calibration-with-python-opencv/
 
+# TODO: need to calibrate on the same size image as the real thing, which means bigger chessboard
+
 
 def calibrate(images, draw=False):
     # Define the dimensions of checkerboard
-    CHESSBOARD_SIZE_SQUARES = (6, 7)
+    CHESSBOARD_SIZE_SQUARES = (6, 9)
 
     # stop the iteration when specified
     # accuracy, epsilon, is reached or
@@ -46,6 +48,10 @@ def calibrate(images, draw=False):
     # Vectors for storing data for successfully processed images
     known_points_3D = []
     found_points_2D = []
+
+    # Track success rate
+    num_success = 0
+    num_fail = 0
 
     # 3D points representing the known true positions of each square. We cheat by using units of
     # "one square width", so we can say that each square corner differs by 1 square and is in the
@@ -67,9 +73,11 @@ def calibrate(images, draw=False):
 
         if not success:
             print("Failed to find corners in image! Continuing...")
+            num_fail += 1
             continue
 
         print("SUCCESS!")
+        num_success += 1
 
         # Refine the positions of each corner
         corners2 = cv2.cornerSubPix(
@@ -91,6 +99,8 @@ def calibrate(images, draw=False):
 
     if len(found_points_2D) == 0:
         raise Exception("Couldn't detect any chessboards!")
+    else:
+        print(f"Processed {num_fail + num_success} images, {num_success} succeeded and {num_fail} failed.")
 
     success, camera_matrix, distortion, rotation, translation = cv2.calibrateCamera(
         known_points_3D, found_points_2D, images[0].shape[::-1], None, None)
@@ -104,32 +114,38 @@ def calibrate(images, draw=False):
 if __name__ == '__main__':
     from sys import argv
     draw = '--draw' in argv
-    if '--nocamera' in argv:
-        print("Reading image from cache (calibration_raw.jpg)")
-        image = cv2.imread("calibration_raw.jpg")
-    else:
-        print("Reading from camera...")
-        camera = cv2.VideoCapture(0)
-        camera.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-        camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-        camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
-        success, image = camera.read()
+    # if '--nocamera' in argv:
+    #     print("Reading image from cache (calibration_raw.jpg)")
+    #     image = cv2.imread("calibration_raw.jpg")
+    # else:
+    #     print("Reading from camera...")
+    #     camera = cv2.VideoCapture(0)
+    #     camera.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+    #     camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+    #     camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+    #     success, image = camera.read()
 
-        if not success or image is None:
-            print("FAILED to read image!")
-            exit(1)
+    #     if not success or image is None:
+    #         print("FAILED to read image!")
+    #         exit(1)
     
-        print("Captured Image! Caching...")
-        cv2.imwrite('calibration_raw.jpg', image)
+    #     print("Captured Image! Caching...")
+    #     cv2.imwrite('calibration_raw.jpg', image)
+    import os
 
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    if draw:
-        cv2.imshow("Input Image (Raw, Grascale)", image)
-        cv2.waitKey(0)
+    images = []
+
+    for file in os.listdir("camera_calibration"):
+        if file.endswith(".jpg"):
+            path = os.path.join("camera_calibration", file)
+            image = cv2.imread(path)
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            print("Read Image:", path)
+            images.append(image)
 
     try:
         print("Calibrating...")
-        calibration = calibrate([image], draw=draw)
+        calibration = calibrate(images, draw=draw)
 
         print("Successfully Calibrated Camera!")
         print("\nCamera Matrix:")
@@ -147,7 +163,7 @@ if __name__ == '__main__':
         print("Undistorting test image...")
 
         undistorted = cv2.undistort(
-            image, calibration.camera_matrix, calibration.distortion)
+            images[0], calibration.camera_matrix, calibration.distortion)
 
         print("Wrote to calibration_undistorted.jpg")
         cv2.imwrite('calibration_undistorted.jpg', undistorted)
