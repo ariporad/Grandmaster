@@ -25,7 +25,7 @@ class CameraCalibration:
     @classmethod
     def read(cls, file):
         with open(file, 'r') as f:
-            data = json.loads(f)
+            data = json.load(f)
             assert data['type'] == cls.JSON_TYPE
             return cls(np.array(data['camera_matrix'], data['distortion']))
 
