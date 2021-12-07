@@ -27,7 +27,7 @@ class CameraCalibration:
         with open(file, 'r') as f:
             data = json.load(f)
             assert data['type'] == cls.JSON_TYPE
-            return cls(np.array(data['camera_matrix'], data['distortion']))
+            return cls(np.array(data['camera_matrix']), np.array(data['distortion']))
 
 
 # From: https://www.geeksforgeeks.org/camera-calibration-with-python-opencv/
