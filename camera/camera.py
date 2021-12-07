@@ -1,12 +1,15 @@
 import cv2
+from calibrate import CameraCalibration
 
 class CameraError(Exception):
         pass
 
 class Camera:
         camera: cv2.VideoCapture
+        calibration: CameraCalibration
 
-        def __init__(self, camera_idx=0):
+        def __init__(self, camera_idx=0, calibration_file='calibration.json'):
+                self.calibration = CameraCalibration.read(calibration_file)
                 self.camera = cv2.VideoCapture(camera_idx)
                 self.camera.set(cv2.CAP_PROP_BUFFERSIZE, 1)
                 self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
@@ -22,4 +25,7 @@ class Camera:
                 if not success:
                         raise CameraError("Failed to read camera frame!")
 
-                return frame
+                undistorted = cv2.undistort(
+                    frame, self.calibration.camera_matrix, self.calibration.distortion)
+
+                return undistorted
