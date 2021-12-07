@@ -29,12 +29,12 @@ PIECES = [
 	('BLACK_KNIGHT_QS', 'n', 201),
 	('BLACK_BISHOP_QS', 'b', 202), # dark squares only
 	('BLACK_QUEEN',     'q', 203),
-	('BLACK_KING',      'k', 129), #204),
+	('BLACK_KING',      'k', 302), #204),
 	('BLACK_BISHOP_KS', 'b', 205), # light squares only
 	('BLACK_KNIGHT_KS', 'n', 206),
 	('BLACK_ROOK_KS',   'r', 207),
 	('BLACK_PAWN_A',    'p', 208),
-	('BLACK_PAWN_B',    'p', 130), #209),
+	('BLACK_PAWN_B',    'p', 300), #209),
 	('BLACK_PAWN_C',    'p', 210),
 	('BLACK_PAWN_D',    'p', 211),
 	('BLACK_PAWN_E',    'p', 212),
