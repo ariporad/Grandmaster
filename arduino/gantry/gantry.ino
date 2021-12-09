@@ -71,7 +71,7 @@ void loop()
 
 		moveXYWithCoordination(steps_x, steps_y, SPEED_STEPS_PER_SEC, ACCEL_STEPS_PER_SEC_PER_SEC);
 
-		Serial.print("DONE:1;X:")
+		Serial.print("TYPE:GANTRY_DONE;X:")
 		Serial.print(String(new_pos_x));
 		Serial.print(";Y:")
 		Serial.println(String(new_pos_y));
@@ -83,9 +83,10 @@ void loop()
 	loops_since_update++;
 	if (loops_since_update >= LOOPS_PER_UPDATE) {
 		loops_since_update = 0;
-		Serial.print("GRANDMASTER:GANTRY;X:");
+		Serial.println('TYPE:ANNOUNCEMENT;NAME:GANTRY');
+		Serial.print("TYPE:STATUS;X:");
 		Serial.print(String(new_pos_x));
-		Serial.print(";Y:")
+		Serial.print(";Y:");
 		Serial.println(String(new_pos_y));
 	}
 }
