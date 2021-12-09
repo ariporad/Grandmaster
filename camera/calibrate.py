@@ -9,6 +9,8 @@ import cv2
 class CameraCalibration:
     camera_matrix: np.array
     distortion: np.array
+    width: int
+    height: int
     # rotation: np.array
     # translation: np.array
 
@@ -19,7 +21,9 @@ class CameraCalibration:
             json.dump({
                 'type': self.JSON_TYPE,
                 'camera_matrix': self.camera_matrix.tolist(),
-                'distortion': self.distortion.tolist()
+                'distortion': self.distortion.tolist(),
+                'width': self.width,
+                'height': self.height
             }, f)
     
     @classmethod
@@ -27,7 +31,7 @@ class CameraCalibration:
         with open(file, 'r') as f:
             data = json.load(f)
             assert data['type'] == cls.JSON_TYPE
-            return cls(np.array(data['camera_matrix']), np.array(data['distortion']))
+            return cls(np.array(data['camera_matrix']), np.array(data['distortion']), data['width'], data['height'])
 
 
 # From: https://www.geeksforgeeks.org/camera-calibration-with-python-opencv/
@@ -101,14 +105,16 @@ def calibrate(images, draw=False):
         raise Exception("Couldn't detect any chessboards!")
     else:
         print(f"Processed {num_fail + num_success} images, {num_success} succeeded and {num_fail} failed.")
+    
+    img_shape = images[0].shape
 
     success, camera_matrix, distortion, rotation, translation = cv2.calibrateCamera(
-        known_points_3D, found_points_2D, images[0].shape[::-1], None, None)
+        known_points_3D, found_points_2D, img_shape[::-1], None, None)
 
     if not success:
         raise Exception("Failed to calibrate camera!")
 
-    return CameraCalibration(camera_matrix, distortion) #, rotation, translation)
+    return CameraCalibration(camera_matrix, distortion, height=img_shape[0], width=img_shape[1]) #, rotation, translation)
 
 
 if __name__ == '__main__':
