@@ -1,3 +1,4 @@
+import chess
 from random import choice
 from detector import Detector
 from tracker import Tracker
@@ -14,8 +15,8 @@ class ChessController:
 		piece_positions = self.detector.detect_piece_positions(img)
 		return self.tracker.generate_board(piece_positions)
 
-	def pick_move(self, board):
-		return choice(list(board.legal_moves))
+	def pick_move(self, board: chess.Board):
+		return choice([move for move in board.legal_moves if board.piece_at(move.from_square).piece_type != chess.KNIGHT])
 
 	def make_move(self, img):
 		board = self.get_current_board(img)
