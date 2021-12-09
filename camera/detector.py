@@ -130,9 +130,15 @@ class Detector:
             
             cv2.imshow("Squares", img)
             cv2.waitKey(0)
-        
-        for tag in sorted((tag for tag_id, tag in tags.items() if tag_id >= 128), key=lambda tag: tag.tag_id):
-            square = closest_item(squares, tag.center, distance=distance)
+
+
+        for tag in sorted((tag for tag_id, tag in tags.items() if tag_id >= 128), key=lambda tag: distance(board_center, tag.center), reverse=True):
+            # HACK: closest_item isn't working, so do this which is bad but works
+            def _key(item):
+                _, pos = item
+                x, y = pos
+                return sqrt(((x - tag.center[0]) ** 2) + ((y - tag.center[1]) ** 2))
+            square = sorted(squares.items(), key=_key)[0][0] #closest_item(squares, tag.center, distance=distance)
             del squares[square]
             yield square, tag.tag_id
 
