@@ -5,9 +5,6 @@
 // Constants
 //
 
-// We use the built-in LED as a status indicator: we turn it on if the program panics
-#define STATUS_LED_PIN 13
-
 // Motors
 // NOTE: X is forms, Y is ranks
 #define X_STEP_PIN 2
@@ -18,17 +15,18 @@
 #define LIMIT_SWITCH_X_PIN 9
 #define LIMIT_SWITCH_Y_PIN 10
 
-// TODO: figure out these values
-#define STEPS_PER_SQUARE 750
+#define STEPS_PER_SQUARE 250
 
 #define SPEED_STEPS_PER_SEC 500
 #define ACCEL_STEPS_PER_SEC_PER_SEC 500
+
+#define LOOPS_PER_UPDATE 500
 
 //
 // State Variables
 //
 
-int cur_pos_x = 0; // 0-7, where 0 is A and 7 is H
+int cur_pos_x = 0; // 0-9, where 0 is A, 7 is H, and 8-9 are the graveyard
 int cur_pos_y = 0; // 0-7, where 0 is Rank 1 and 7 is Rank 7
 
 //
@@ -39,10 +37,6 @@ SpeedyStepper yMotor;
 
 void setup()
 {
-	// Configure and turn off the panic LED, so we can see if we panic later on
-	pinMode(STATUS_LED_PIN, OUTPUT);
-	digitalWrite(STATUS_LED_PIN, LOW);
-
 	// Setup the Serial interface
 	Serial.begin(115200);
 	Serial.setTimeout(50); // Make sure we don't spend too much time waiting for serial input
@@ -54,66 +48,46 @@ void setup()
 	digitalWrite(STEPPERS_ENABLE_PIN, LOW);
 
 	Serial.println("Ready!");
-	send_status();
 }
 
+int loops_since_update = 0;
 void loop()
 {
 	// Check for Serial communication
 	if (Serial.available())
 	{
-		int cmd = Serial.parseInt();
+		uint16_t cmd = Serial.parseInt();
 
-		// Commands are intepreted as square numbers to move to, with the same notation as
-		// Python Chess: A1 = 0 -> H8 = 63
-		// TODO: Need to change this notation to allow moving past the edge of the board
-		int new_pos = max(0, min(63, cmd));
-		int new_pos_x = new_pos % 8;
-		int new_pos_y = new_pos / 8;
+		// Commands are in the form of 0bAABB, where AA is the index of the form to move to and BB
+		// is the index of the rank to move to.
+		cmd = cmd & 0b1111
+		int new_pos_x = cmd >> 2;
+		int new_pos_y = cmd & 0b11;
 		int diff_pos_x = new_pos_x - cur_pos_x;
 		int diff_pos_y = new_pos_y - cur_pos_y;
 
 		int steps_x = diff_pos_x * STEPS_PER_SQUARE;
 		int steps_y = diff_pos_y * STEPS_PER_SQUARE;
 
-		Serial.print("Moving: ");
-		Serial.print(cur_pos_x);
-		Serial.print(",");
-		Serial.print(cur_pos_y);
-		Serial.print(" -> ");
-		Serial.print(new_pos_x);
-		Serial.print(",");
-		Serial.print(new_pos_y);
-		Serial.print(" (");
-		Serial.print(diff_pos_x);
-		Serial.print(",");
-		Serial.print(diff_pos_y);
-		Serial.print(" squares, ");
-		Serial.print(steps_x);
-		Serial.print(",");
-		Serial.print(steps_y);
-		Serial.print(" steps");
-		Serial.println(")");
-
 		moveXYWithCoordination(steps_x, steps_y, SPEED_STEPS_PER_SEC, ACCEL_STEPS_PER_SEC_PER_SEC);
+
+		Serial.print("DONE:1;X:")
+		Serial.print(String(new_pos_x));
+		Serial.print(";Y:")
+		Serial.println(String(new_pos_y));
 
 		cur_pos_x = new_pos_x;
 		cur_pos_y = new_pos_y;
-
-		Serial.println("Done!");
-		send_status();
 	}
-}
 
-void send_status()
-{
-	Serial.print("[GANTRY] Grandmaster OK:");
-	Serial.print(" at Form #");
-	Serial.print(cur_pos_x);
-	Serial.print(" Rank #");
-	Serial.print(cur_pos_y);
-	Serial.print(" (0-63 to move)");
-	Serial.println("!");
+	loops_since_update++;
+	if (loops_since_update >= LOOPS_PER_UPDATE) {
+		loops_since_update = 0;
+		Serial.print("GRANDMASTER:GANTRY;X:");
+		Serial.print(String(new_pos_x));
+		Serial.print(";Y:")
+		Serial.println(String(new_pos_y));
+	}
 }
 
 //

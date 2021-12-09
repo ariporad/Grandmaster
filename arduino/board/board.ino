@@ -9,8 +9,16 @@
 
 #define MAGNET_PIN 2
 
-#define CMD_MAGNET_ON 1
-#define CMD_MAGNET_OFF 2
+#define START_BUTTON_PIN 4
+#define FUN_BUTTON_PIN 5
+#define PLAYER_BUTTON_PIN 6
+#define COMPUTER_BUTTON_PIN 7
+
+#define CMD_LIGHTS 0b00
+#define CMD_BUTTON_LIGHT 0b01
+#define CMD_MAGNET 0b10
+
+#define LOOPS_PER_UPDATE 500
 
 //
 // State Variables
@@ -29,52 +37,94 @@ void setup()
 
 	// Configure pins
 	pinMode(MAGNET_PIN, OUTPUT);
-
-	Serial.println("Ready!");
-	send_status();
+  	pinMode(START_BUTTON_PIN, INPUT);
+  	pinMode(FUN_BUTTON_PIN, INPUT);
+  	pinMode(PLAYER_BUTTON_PIN, INPUT);
+  	pinMode(COMPUTER_BUTTON_PIN, INPUT);
 }
+
+int loops_since_update = 0;
 
 void loop()
 {
 	// Check for Serial communication
 	if (Serial.available())
 	{
-		int cmd = Serial.parseInt();
+		uint16_t raw_cmd = Serial.parseInt();
+		uint16_t cmd_type = raw_cmd & 0b11;
+		uint16_t data = raw_cmd >> 2;
 
-		// Commands (ie. magnet control) are negative so as to disambiguate with setting motor speeds
-		switch (cmd)
+		switch (cmd_type)
 		{
-		case CMD_MAGNET_ON:
-			magnet_enabled = true;
-			Serial.println("Magnet Enabled");
+		case CMD_MAGNET:
+			cmd_magnet(data);
 			break;
-		case CMD_MAGNET_OFF:
-			magnet_enabled = false;
-			Serial.println("Magnet Disabled");
+		case CMD_BUTTON_LIGHT:
+			cmd_button_light(data);
+			break;
+		case CMD_LIGHTS:
+			cmd_lights(data);
 			break;
 		default:
-			Serial.println("Unknown Command!");
+			send_invalid_command();	
 			break;
 		}
-		digitalWrite(MAGNET_PIN, magnet_enabled ? HIGH : LOW);
+		send_status();
+	}
+
+	loops_since_update++;
+	if (loops_since_update >= LOOPS_PER_UPDATE) {
+		loops_since_update = 0;
 		send_status();
 	}
 }
 
-void send_status()
-{
-	Serial.print("[BOARD] Grandmaster OK: Magnet is ");
-	if (magnet_enabled)
-	{
-		Serial.print("ENABLED (");
-		Serial.print(CMD_MAGNET_OFF);
-		Serial.print(" to disable)");
+void send_status() {
+	Serial.print("GRANDMASTER:BOARD;START:");
+	Serial.print(String(digitalRead(START_BUTTON_PIN)));
+	Serial.print(";FUN:");
+	Serial.print(String(digitalRead(FUN_BUTTON_PIN)));
+	Serial.print(";COMPUTER:");
+	Serial.print(String(digitalRead(COMPUTER_BUTTON_PIN)));
+	Serial.print(";PLAYER:");
+	Serial.print(String(digitalRead(PLAYER_BUTTON_PIN)));
+	Serial.println("");
+}
+
+void send_invalid_command() {
+	Serial.println("ERROR:INVALID_COMMAND");
+}
+
+/**
+ * Magnet Command Format:
+ * 0bA10
+ * Where A is 1 to turn the magnet on, or 0 to turn it off.
+ */
+void cmd_magnet(uint16_t data) {
+	switch (data) {
+		case 0:
+			digitalWrite(MAGNET_PIN, LOW);
+			break;
+		case 1:
+			digitalWrite(MAGNET_PIN, HIGH);
+			break;
+		default:
+			send_invalid_command();
 	}
-	else
-	{
-		Serial.print("DISABLED (");
-		Serial.print(CMD_MAGNET_ON);
-		Serial.print(" to enable)");
-	}
-	Serial.println("!");
+}
+
+/**
+ * Button Light Command Format:
+ * 0bABB01
+ * Where A is the action you want (1 for on, 0 for off), and BB is the offset of the LED (9 + BB) is
+ * the pin to use.
+ */
+void cmd_button_light(uint16_t data) {
+  uint8_t idx = data & 0b011;
+  bool enabled = data & 0b100;
+  digitalWrite(9 + idx, enabled ? HIGH : LOW);
+}
+
+void cmd_lights(uint16_t data) {
+
 }
