@@ -53,7 +53,7 @@ else:
 
 	move = chess_controller.pick_move(board)
 
-if "--nomove":
+if "--nomove" in argv:
 	print("Not moving, but would:", move)
 else:
 	print("Moving:", move)
