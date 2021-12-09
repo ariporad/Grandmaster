@@ -71,7 +71,8 @@ else:
 
 	print("Move to Square:", chess.square_name(move.to_square), "=", move.to_square)
 
-	gantry.write(bytes(str(move.to_square), 'utf-8'))
+	# gantry.write(bytes(str(move.to_square), 'utf-8'))
+	gantry.write(bytes(str(9), 'utf-8'))
 	gantry.flush()
 	sleep(10)
 
