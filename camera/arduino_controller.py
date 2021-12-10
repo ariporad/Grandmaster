@@ -16,10 +16,11 @@ class Arduino:
 		found_arduino = False
 		for device in serial.tools.list_ports.comports():
 			if device.serial_number is not None and device.serial_number.upper() == serial_number.upper():
+				found_arduino = True
 				self.serial = Serial(device.device, baudrate=baudrate, timeout=0.1)
 		
 		if not found_arduino:
-			raise IOError(f"Couldn't find Arduino! (Name: {name}, SN: {serial_number}")
+			raise IOError(f"Couldn't find Arduino! (Name: {name}, SN: {serial_number})")
 
 	def write(self, data: int):
 		self.serial.write(bytes(str(data), 'utf-8'))
