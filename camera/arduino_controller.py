@@ -57,7 +57,7 @@ class Arduino:
 		b) digits 0-9
 		"""
 		data = {}
-		for pair in msg.upper().split(' '):
+		for pair in msg.upper().split(';'):
 			print("PAIR:", repr(pair))
 			key, value = pair.split(':')
 			# attempt to convert value to an int
