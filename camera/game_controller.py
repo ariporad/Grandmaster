@@ -54,8 +54,9 @@ class GameController:
 			self.arduino.set_button_light(Button.START, False)
 			self.arduino.set_button_light(Button.COMPUTER, True)
 			self.arduino.set_button_light(Button.PLAYER, False)
-			img = self.camera.capture_frame()
-			move: chess.Move = self.chess.make_move(img)
+			# img = self.camera.capture_frame()
+			# move: chess.Move = self.chess.make_move(img)
+			move = chess.Move.from_uci("a1c3")
 			print("Making Move:", move)
 
 			self.set_electromagnet(False)
