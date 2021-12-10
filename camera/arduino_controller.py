@@ -105,6 +105,10 @@ class ArduinoController:
 				self.buttons[Button[message['BUTTON']]] = bool(message['PRESSED'])
 			elif message['TYPE'] == 'MAGNET_STATUS':
 				self.electromagnet_enabled = bool(message['ENABLED'])
+			elif message['TYPE'] == 'STATUS':
+				self.electromagnet_enabled = bool(message['MAGNET'])
+				for button in Button:
+					self.buttons[button] = bool(message[f"BUTTON{button}"]) or self.buttons[button]
 			else:
 				print("Got unknown message from board:", message)
 

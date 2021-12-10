@@ -56,32 +56,34 @@ void loop()
 	{
 		uint16_t cmd = Serial.parseInt();
 
-		// Commands are in the form of 0bAABB, where AA is the index of the form to move to and BB
+		// Commands are in the form of 0b1AABB, where AA is the index of the form to move to and BB
 		// is the index of the rank to move to.
-		cmd = cmd & 0b1111;
-		int new_pos_x = cmd >> 2;
-		int new_pos_y = cmd & 0b11;
-		int diff_pos_x = new_pos_x - cur_pos_x;
-		int diff_pos_y = new_pos_y - cur_pos_y;
+		if (cmd & 0b10000) {
+			cmd = cmd & 0b01111;
+			int new_pos_x = cmd >> 2;
+			int new_pos_y = cmd & 0b11;
+			int diff_pos_x = new_pos_x - cur_pos_x;
+			int diff_pos_y = new_pos_y - cur_pos_y;
 
-		int steps_x = diff_pos_x * STEPS_PER_SQUARE;
-		int steps_y = diff_pos_y * STEPS_PER_SQUARE;
+			int steps_x = diff_pos_x * STEPS_PER_SQUARE;
+			int steps_y = diff_pos_y * STEPS_PER_SQUARE;
 
-		moveXYWithCoordination(steps_x, steps_y, SPEED_STEPS_PER_SEC, ACCEL_STEPS_PER_SEC_PER_SEC);
+			moveXYWithCoordination(steps_x, steps_y, SPEED_STEPS_PER_SEC, ACCEL_STEPS_PER_SEC_PER_SEC);
 
-		Serial.print("TYPE:GANTRY_DONE;X:");
-		Serial.print(String(new_pos_x));
-		Serial.print(";Y:");
-		Serial.println(String(new_pos_y));
+			Serial.print("TYPE:GANTRY_DONE;X:");
+			Serial.print(String(new_pos_x));
+			Serial.print(";Y:");
+			Serial.println(String(new_pos_y));
 
-		cur_pos_x = new_pos_x;
-		cur_pos_y = new_pos_y;
+			cur_pos_x = new_pos_x;
+			cur_pos_y = new_pos_y;
+		}
 	}
 
 	loops_since_update++;
 	if (loops_since_update >= LOOPS_PER_UPDATE) {
 		loops_since_update = 0;
-		Serial.println("TYPE:ANNOUNCEMENT;NAME:GANTRY")
+		Serial.println("TYPE:ANNOUNCEMENT;NAME:GANTRY");
 		Serial.print("TYPE:POSITION;X:");
 		Serial.print(String(cur_pos_x));
 		Serial.print(";Y:");

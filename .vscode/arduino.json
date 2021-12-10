@@ -1,5 +1,5 @@
 {
-    "sketch": "arduino/board/board.ino",
+    "sketch": "arduino/gantry/gantry.ino",
     "board": "arduino:avr:uno",
     "port": "/dev/cu.usbmodem101"
 }

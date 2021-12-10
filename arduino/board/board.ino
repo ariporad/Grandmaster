@@ -99,6 +99,7 @@ void check_buttons() {
 			Serial.print(String(i));
 			Serial.print(";PRESSED:");
 			Serial.println(String(int(cur_button_value)));
+			last_button_values[i] = cur_button_value;
 		}
 	}
 }
