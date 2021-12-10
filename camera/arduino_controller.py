@@ -1,16 +1,25 @@
 from typing import *
 from serial import Serial
 from enum import IntEnum
-from time import sleep
+import serial.tools.list_ports
+
+GANTRY_ARDUINO_SERIAL_NUMBER = "85033313237351301221"
+BOARD_ARDUINO_SERIAL_NUMBER = "8503331323735140D1D0"
 
 class Arduino:
 	name: str
 	serial: Serial
 
-	def __init__(self, port, name, baudrate=115200):
-		self.name = name
-		self.serial = Serial(port, baudrate, timeout=0.1)
-	
+	def __init__(self, name: str, serial_number: str,  baudrate=115200):
+		self.name = name.upper()
+		
+		found_arduino = False
+		for device in serial.tools.list_ports.comports():
+			if device.serial_number.upper() == serial_number.upper():
+				self.serial = Serial(device.device, baudrate=baudrate, timeout=0.1)
+		
+		if not found_arduino:
+			raise IOError(f"Couldn't find Arduino! (Name: {name}, SN: {serial_number}")
 
 	def write(self, data: int):
 		self.serial.write(bytes(str(data), 'utf-8'))
@@ -79,8 +88,8 @@ class ArduinoController:
 	electromagnet_enabled: bool = False
 
 	def __init__(self):
-		self.gantry = Arduino('/dev/ttyACM0')
-		self.board = Arduino('/dev/ttyACM1')
+		self.gantry = Arduino("GANTRY", GANTRY_ARDUINO_SERIAL_NUMBER)
+		self.board = Arduino("BOARD", BOARD_ARDUINO_SERIAL_NUMBER)
 		self.buttons = {button: False for button in Button}
 	
 	def move_to_square(self, rank: int, file: int):
