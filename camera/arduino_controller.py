@@ -5,17 +5,36 @@ from time import sleep
 
 class Arduino:
 	name: str
-	def __init__(self, port, name):
-		pass
+	serial: Serial
+
+	def __init__(self, port, name, baudrate=115200):
+		self.name = name
+		self.serial = Serial(port, baudrate, timeout=0.1)
+	
 
 	def write(self, data: int):
-		pass
+		self.serial.write(bytes(str(data), 'utf-8'))
+		self.serial.flush()
 
-	def get_messages(self, max=None) -> List[Dict]:
+	def get_messages(self, max=None) -> Iterator[Dict]:
 		"""
 		Read, parse, and return any pending messages from the serial port.
 		"""
-		pass
+		while max is None or max > 0:
+			line = self.serial.readline()
+			if line is None:
+				break
+			line = line.strip()
+			if line == "":
+				break
+			msg = self.parse_message(line)
+			if msg['TYPE'] == 'ANNOUNCEMENT':
+				if msg['NAME'].upper() != self.name.upper():
+					print(f"WARNING: Arduino '{self.name}' got announcement for name '{msg['NAME']}")
+			else:
+				if max is not None:
+					max -= 1
+				yield msg
 
 	def parse_message(self, msg: str):
 		"""

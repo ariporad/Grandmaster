@@ -9,10 +9,10 @@
 
 #define MAGNET_PIN 2
 
-#define START_BUTTON_PIN 9
-#define FUN_BUTTON_PIN 10
-#define PLAYER_BUTTON_PIN 11
-#define COMPUTER_BUTTON_PIN 12
+// There are 4 buttons, which sensors/LEDs are 4 or 9 +0, 1, 2, 3
+#define BUTTON_PIN_START 9
+#define BUTTON_LED_START 4
+#define NUM_BUTTONS 4
 
 #define CMD_LIGHTS 0b00
 #define CMD_BUTTON_LIGHT 0b01
@@ -36,11 +36,16 @@ void setup()
 	Serial.setTimeout(50); // Make sure we don't spend too much time waiting for serial input
 
 	// Configure pins
+	for (int i = 0; i < NUM_BUTTONS; i++) {
+		pinMode(BUTTON_PIN_START + i, INPUT);
+		pinMode(BUTTON_LED_START + i, OUTPUT);
+		digitalWrite(BUTTON_LED_START + i, LOW);
+	}
+
 	pinMode(MAGNET_PIN, OUTPUT);
-  	pinMode(START_BUTTON_PIN, INPUT);
-  	pinMode(FUN_BUTTON_PIN, INPUT);
-  	pinMode(PLAYER_BUTTON_PIN, INPUT);
-  	pinMode(COMPUTER_BUTTON_PIN, INPUT);
+    digitalWrite(MAGNET_PIN, LOW);
+
+	send_status();
 }
 
 int loops_since_update = LOOPS_PER_UPDATE;
@@ -48,39 +53,7 @@ int loops_since_update = LOOPS_PER_UPDATE;
 void loop()
 {
 	// Check for Serial communication
-	if (Serial.available())
-	{
-		uint16_t raw_cmd = Serial.parseInt();
-
-    send_status();
-    
-    if (raw_cmd != 0) {
-  		uint16_t cmd_type = raw_cmd & 0b11;
-  		uint16_t data = raw_cmd >> 2;
-  
-      Serial.print("COMMAND: raw: ");
-      Serial.print(String(raw_cmd));
-      Serial.print(", type: ");
-      Serial.print(String(cmd_type));
-      Serial.print(", data: ");
-      Serial.println(String(data));
-  		switch (cmd_type)
-  		{
-  		case CMD_MAGNET:
-  			cmd_magnet(data);
-  			break;
-  		case CMD_BUTTON_LIGHT:
-  			cmd_button_light(data);
-  			break;
-  		case CMD_LIGHTS:
-  			cmd_lights(data);
-  			break;
-  		default:
-  			send_invalid_command();	
-  			break;
-  		}
-    }
-	}
+	if (Serial.available()) read_command();
 
 	check_buttons();
 
@@ -91,52 +64,56 @@ void loop()
 	}
 }
 
-bool last_start_button = false;
-bool last_fun_button = false;
-bool last_computer_button = false;
-bool last_player_button = false;
+void read_command() {
+	uint16_t raw_cmd = Serial.parseInt();
+		
+	if (raw_cmd == 0) return;
+
+	uint16_t cmd_type = raw_cmd & 0b11;
+	uint16_t data = raw_cmd >> 2;
+
+	switch (cmd_type)
+	{
+	case CMD_MAGNET:
+		cmd_magnet(data);
+		break;
+	case CMD_BUTTON_LIGHT:
+		cmd_button_light(data);
+		break;
+	case CMD_LIGHTS:
+		cmd_lights(data);
+		break;
+	default:
+		send_invalid_command();	
+		break;
+	}
+}
+
+bool last_button_values[NUM_BUTTONS];
+
 void check_buttons() {
-	// TODO: Keep button numbers in sync with Button in ArduinoController
-	bool start_button = digitalRead(START_BUTTON_PIN);
-	if (last_start_button != start_button) {
-		Serial.print("TYPE:BUTTON_PRESS;BUTTON:2;PRESSED:");
-		Serial.println(String(int(start_button)));
+	for (int i = 0; i < NUM_BUTTONS; i++) {
+		bool cur_button_value = digitalRead(BUTTON_PIN_START + i);
+		if (cur_button_value != last_button_values[i]) {
+			Serial.print("TYPE:BUTTON_PRESS;BUTTON:");
+			Serial.print(String(i));
+			Serial.print(";PRESSED:");
+			Serial.println(String(int(cur_button_value)));
+		}
 	}
-	last_start_button = start_button;
-
-	bool fun_button = digitalRead(FUN_BUTTON_PIN);
-	if (last_fun_button != fun_button) {
-		Serial.print("TYPE:BUTTON_PRESS;BUTTON:3;PRESSED:");
-		Serial.println(String(int(fun_button)));
-	}
-	last_fun_button = fun_button;
-
-	bool player_button = digitalRead(PLAYER_BUTTON_PIN);
-	if (last_player_button != player_button) {
-		Serial.print("TYPE:BUTTON_PRESS;BUTTON:1;PRESSED:");
-		Serial.println(String(int(player_button)));
-	}
-	last_player_button = player_button;
-
-	bool computer_button = digitalRead(COMPUTER_BUTTON_PIN);
-	if (last_computer_button != computer_button) {
-		Serial.print("TYPE:BUTTON_PRESS;BUTTON:0;PRESSED:");
-		Serial.println(String(int(computer_button)));
-	}
-	last_computer_button = computer_button;
-
 }
 
 void send_status() {
-	Serial.println("TYPE:ANNOUNCEMENT;NAME:BOARD");
-	Serial.print("TYPE:STATUS;START:");
-	Serial.print(String(digitalRead(START_BUTTON_PIN)));
-	Serial.print(";FUN:");
-	Serial.print(String(digitalRead(FUN_BUTTON_PIN)));
-	Serial.print(";COMPUTER:");
-	Serial.print(String(digitalRead(COMPUTER_BUTTON_PIN)));
-	Serial.print(";PLAYER:");
-	Serial.print(String(digitalRead(PLAYER_BUTTON_PIN)));
+	Serial.println("TYPE:ANNOUNCEMENT;DEVICE:BOARD");
+	Serial.print("TYPE:STATUS");
+	for (int i = 0; i < NUM_BUTTONS; i++) {
+		Serial.print(";BUTTON");
+		Serial.print(String(i));
+		Serial.print(":");
+		Serial.print(String(int(last_button_values[i])));
+	}
+    Serial.print(";MAGNET:");
+    Serial.print(String(digitalRead(MAGNET_PIN)));
 	Serial.println("");
 }
 
@@ -150,19 +127,14 @@ void send_invalid_command() {
  * Where A is 1 to turn the magnet on, or 0 to turn it off.
  */
 void cmd_magnet(uint16_t data) {
-//  Serial.print("MAGNET DATA: ");
-//  Serial.println(String(data));
 	switch (data) {
 		case 0:
 			digitalWrite(MAGNET_PIN, LOW);
-//      Serial.println("MAGNET OFF");
 			break;
 		case 1:
 			digitalWrite(MAGNET_PIN, HIGH);
-//      Serial.println("MAGNET ON");
 			break;
 		default:
-//      Serial.println("MAGNET ERR");
 			send_invalid_command();
 			return;
 	}
@@ -179,7 +151,7 @@ void cmd_magnet(uint16_t data) {
 void cmd_button_light(uint16_t data) {
   uint8_t idx = data & 0b011;
   bool enabled = data & 0b100;
-  digitalWrite(4 + idx, enabled ? HIGH : LOW);
+  digitalWrite(BUTTON_LED_START + idx, enabled ? HIGH : LOW);
 }
 
 void cmd_lights(uint16_t data) {
