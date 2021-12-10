@@ -18,8 +18,8 @@ class GameController:
 	camera: Camera
 	state: State = State.HUMAN_TURN
 
-	def __init__(self, camera_calibration='calibration.json'):
-		self.camera = Camera(camera_calibration=camera_calibration)
+	def __init__(self, calibration_file='calibration.json'):
+		self.camera = Camera(calibration_file=calibration_file)
 		self.chess = ChessController()
 		self.arduino = ArduinoController()
 
