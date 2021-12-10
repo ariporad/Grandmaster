@@ -35,7 +35,7 @@ class Arduino:
 			if line is None:
 				break
 			line = line.strip()
-			if line == "":
+			if line == "" or not line.startswith('TYPE:'):
 				break
 			msg = self.parse_message(line)
 			if msg['TYPE'] == 'ANNOUNCEMENT':
@@ -58,6 +58,7 @@ class Arduino:
 		"""
 		data = {}
 		for pair in msg.upper().split(' '):
+			print("PAIR:", repr(pair))
 			key, value = pair.split(':')
 			# attempt to convert value to an int
 			try:
