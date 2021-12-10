@@ -8,9 +8,9 @@ from chess_controller import ChessController
 from arduino_controller import ArduinoController, Button
 
 class State(IntEnum):
-	HUMAN_TURN = auto()
-	COMPUTER_TURN = auto()
-	ENDED = auto()
+	HUMAN_TURN = 0
+	COMPUTER_TURN = 1
+	ENDED = 2
 
 class GameController:
 	arduino: ArduinoController
@@ -25,22 +25,31 @@ class GameController:
 
 	def move_to_square(self, square: chess.Square, block=True):
 		pos = (chess.square_file(square), chess.square_rank(square))
+		print("MOVING TO SQUARE:", pos)
 		self.arduino.move_to_square(*pos)
+		print("MOVED")
 		if block:
 			while self.arduino.gantry_pos != pos:
+				print("WAITING: target=", pos, "cur=", self.arduino.gantry_pos)
 				self.arduino.tick()
 				sleep(0.1)
 	
 	def set_electromagnet(self, enabled: bool, block=True):
+		print("SETITNG EMAG:", enabled)
 		self.arduino.set_electromagnet(enabled)
+		print("SET EMAG:", enabled)
 		if block:
 			while self.arduino.electromagnet_enabled != enabled:
+				print("WAITING EMAG: cur=", self.arduino.electromagnet_enabled, "target=", enabled)
 				self.arduino.tick()
 				sleep(0.1)
 
 	def tick(self):
 		self.arduino.tick()
-		print(f"TICK({self.state}): buttons={self.arduino.buttons}")
+		# print("TICK:", self.state, self.arduino.buttons)
+		for button, pressed in self.arduino.buttons.items():
+			if pressed:
+				print("Button", button, "status", pressed)
 		if self.state == State.HUMAN_TURN:
 			self.arduino.set_button_light(Button.FUN, False)
 			self.arduino.set_button_light(Button.START, False)
@@ -50,13 +59,14 @@ class GameController:
 				print("Player button pressed! My turn now!")
 				self.state = State.COMPUTER_TURN
 		elif self.state == State.COMPUTER_TURN:
+			print("My turn!")
 			self.arduino.set_button_light(Button.FUN, False)
 			self.arduino.set_button_light(Button.START, False)
 			self.arduino.set_button_light(Button.COMPUTER, True)
 			self.arduino.set_button_light(Button.PLAYER, False)
 			# img = self.camera.capture_frame()
 			# move: chess.Move = self.chess.make_move(img)
-			move = chess.Move.from_uci("a1c3")
+			move = chess.Move.from_uci("b2c3")
 			print("Making Move:", move)
 
 			self.set_electromagnet(False)
