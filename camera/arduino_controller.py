@@ -15,7 +15,7 @@ class Arduino:
 		
 		found_arduino = False
 		for device in serial.tools.list_ports.comports():
-			if device.serial_number.upper() == serial_number.upper():
+			if device.serial_number is not None and device.serial_number.upper() == serial_number.upper():
 				self.serial = Serial(device.device, baudrate=baudrate, timeout=0.1)
 		
 		if not found_arduino:
