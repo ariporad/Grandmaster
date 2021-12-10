@@ -23,7 +23,7 @@
 #define BRIGHTNESS 64
 #define LED_TYPE WS2811
 #define COLOR_ORDER GRB
-CRGB leds[NUM_LEDS];
+CRGB leds[NUM_FANCY_LEDS];
 
 #define UPDATES_PER_SECOND 100
 CRGBPalette16 currentPalette;
@@ -32,8 +32,8 @@ TBlendType currentBlending;
 void setupLEDs()
 {
 	delay(3000); // power-up safety delay
-	FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
-	FastLED.setBrightness(BRIGHTNESS);
+	FastLED.addLeds<FANCY_LED_TYPE, FANCY_LED_PIN, FANCY_LED_COLOR_ORDER>(leds, NUM_FANCY_LEDS).setCorrection(TypicalLEDStrip);
+	FastLED.setBrightness(FANCY_LED_BRIGHTNESS);
 
 	currentPalette = RainbowColors_p;
 	currentBlending = LINEARBLEND;
@@ -56,7 +56,7 @@ void FillLEDsFromPaletteColors(uint8_t colorIndex)
 {
 	uint8_t brightness = 255;
 
-	for (int i = 0; i < NUM_LEDS; ++i)
+	for (int i = 0; i < NUM_FANCY_LEDS; ++i)
 	{
 		leds[i] = ColorFromPalette(currentPalette, colorIndex, brightness, currentBlending);
 		colorIndex += 3;

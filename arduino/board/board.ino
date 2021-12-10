@@ -45,6 +45,8 @@ void setup()
 	pinMode(MAGNET_PIN, OUTPUT);
     digitalWrite(MAGNET_PIN, LOW);
 
+	setupLEDs();
+
 	send_status();
 }
 
@@ -56,6 +58,8 @@ void loop()
 	if (Serial.available()) read_command();
 
 	check_buttons();
+
+	updateLEDs();
 
 	loops_since_update++;
 	if (loops_since_update >= LOOPS_PER_UPDATE) {
@@ -155,6 +159,57 @@ void cmd_button_light(uint16_t data) {
   digitalWrite(BUTTON_LED_START + idx, enabled ? HIGH : LOW);
 }
 
-void cmd_lights(uint16_t data) {
+#include <FastLED.h>
 
+#define FANCY_LED_PIN 3
+#define NUM_FANCY_LEDS 50
+#define FANCY_LED_BRIGHTNESS 64
+#define FANCY_LED_TYPE WS2811
+#define FANCY_LED_COLOR_ORDER GRB
+CRGB leds[NUM_FANCY_LEDS];
+
+#define FANCY_LED_UPDATES_PER_SECOND 100
+CRGBPalette16 currentPalette;
+TBlendType currentBlending;
+
+void setupLEDs()
+{
+	delay(3000); // power-up safety delay
+	FastLED.addLeds<FANCY_LED_TYPE, FANCY_LED_PIN, FANCY_LED_COLOR_ORDER>(leds, NUM_FANCY_LEDS).setCorrection(TypicalLEDStrip);
+	FastLED.setBrightness(FANCY_LED_BRIGHTNESS);
+
+	currentPalette = RainbowColors_p;
+	currentBlending = LINEARBLEND;
+}
+
+unsigned long next_led_update = 0;
+
+void updateLEDs()
+{
+	// ChangePalettePeriodically();
+
+	// FIXME: This doesn't account for overflow
+	if (millis() < next_led_update) return;
+	next_led_update = millis() + (1000 / FANCY_LED_UPDATES_PER_SECOND);
+
+	static uint8_t startIndex = 0;
+	startIndex = startIndex + 1; /* motion speed */
+
+	FillLEDsFromPaletteColors(startIndex);
+
+	FastLED.show();
+}
+
+void FillLEDsFromPaletteColors(uint8_t colorIndex)
+{
+	uint8_t brightness = 255;
+
+	for (int i = 0; i < NUM_FANCY_LEDS; ++i)
+	{
+		leds[i] = ColorFromPalette(currentPalette, colorIndex, brightness, currentBlending);
+		colorIndex += 3;
+	}
+}
+void cmd_lights(uint16_t data) {
+	// Not implemented yet, LEDs just always on
 }
