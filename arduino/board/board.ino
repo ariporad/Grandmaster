@@ -109,7 +109,7 @@ void check_buttons() {
 }
 
 void send_status() {
-	Serial.println("TYPE:ANNOUNCEMENT;DEVICE:BOARD");
+	Serial.println("TYPE:ANNOUNCEMENT;NAME:BOARD");
 	Serial.print("TYPE:STATUS");
 	for (int i = 0; i < NUM_BUTTONS; i++) {
 		Serial.print(";BUTTON");
