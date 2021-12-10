@@ -3,7 +3,7 @@ from typing import *
 import chess
 from time import sleep
 from enum import IntEnum, auto
-from camera.camera import Camera
+from cam import Camera
 from chess_controller import ChessController
 from arduino_controller import ArduinoController, Button
 

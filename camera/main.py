@@ -27,7 +27,7 @@ else:
 		print("Skipping camera, loading realboard.jpg")
 		img = cv2.imread('realboard.jpg')
 	else:
-		from camera import Camera
+		from cam import Camera
 		camera = Camera()
 
 		img = camera.capture_frame()
