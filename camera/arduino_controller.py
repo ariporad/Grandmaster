@@ -31,12 +31,15 @@ class Arduino:
 		Read, parse, and return any pending messages from the serial port.
 		"""
 		while max is None or max > 0:
-			line = self.serial.readline().decode('utf-8')
+			try:
+				line = self.serial.readline().decode('utf-8')
+			except UnicodeDecodeError:
+				continue
 			if line is None:
 				break
 			line = line.strip()
 			if line == "" or not line.startswith('TYPE:'):
-				break
+				continue
 			msg = self.parse_message(line)
 			if msg['TYPE'] == 'ANNOUNCEMENT':
 				if msg['NAME'].upper() != self.name.upper():
