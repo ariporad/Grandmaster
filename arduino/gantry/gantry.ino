@@ -7,18 +7,18 @@
 
 // Motors
 // NOTE: X is forms, Y is ranks
-#define X_STEP_PIN 2
-#define Y_STEP_PIN 3
-#define X_DIR_PIN 5
-#define Y_DIR_PIN 6
+#define X_STEP_PIN 3
+#define Y_STEP_PIN 2
+#define X_DIR_PIN 6
+#define Y_DIR_PIN 5
 #define STEPPERS_ENABLE_PIN 8
-#define LIMIT_SWITCH_X_PIN 9
-#define LIMIT_SWITCH_Y_PIN 10
+#define LIMIT_SWITCH_X_PIN 10
+#define LIMIT_SWITCH_Y_PIN 9
 
-#define STEPS_PER_SQUARE 250
+#define STEPS_PER_SQUARE -260
 
-#define SPEED_STEPS_PER_SEC 500
-#define ACCEL_STEPS_PER_SEC_PER_SEC 500
+#define SPEED_STEPS_PER_SEC 200
+#define ACCEL_STEPS_PER_SEC_PER_SEC 100
 
 #define LOOPS_PER_UPDATE 500
 
@@ -39,6 +39,7 @@ void setup()
 {
 	// Setup the Serial interface
 	Serial.begin(115200);
+
 	Serial.setTimeout(50); // Make sure we don't spend too much time waiting for serial input
 
 	// Setup the Motors
@@ -56,12 +57,10 @@ void loop()
 	{
 		uint16_t cmd = Serial.parseInt();
 
-		// Commands are in the form of 0b1AABB, where AA is the index of the form to move to and BB
-		// is the index of the rank to move to.
-		if (cmd & 0b10000) {
-			cmd = cmd & 0b01111;
-			int new_pos_x = cmd >> 2;
-			int new_pos_y = cmd & 0b11;
+		// Commands are unsigned decimal integers. A1 = 01, H8 = 78, J8 = 98
+		if (cmd != 0) {
+			int new_pos_x = cmd / 10;
+			int new_pos_y = (cmd % 10) - 1;
 			int diff_pos_x = new_pos_x - cur_pos_x;
 			int diff_pos_y = new_pos_y - cur_pos_y;
 
@@ -70,10 +69,7 @@ void loop()
 
 			moveXYWithCoordination(steps_x, steps_y, SPEED_STEPS_PER_SEC, ACCEL_STEPS_PER_SEC_PER_SEC);
 
-			Serial.print("TYPE:GANTRY_DONE;X:");
-			Serial.print(String(new_pos_x));
-			Serial.print(";Y:");
-			Serial.println(String(new_pos_y));
+			send_position();
 
 			cur_pos_x = new_pos_x;
 			cur_pos_y = new_pos_y;
@@ -83,12 +79,14 @@ void loop()
 	loops_since_update++;
 	if (loops_since_update >= LOOPS_PER_UPDATE) {
 		loops_since_update = 0;
-		Serial.println("TYPE:ANNOUNCEMENT;NAME:GANTRY");
-		Serial.print("TYPE:POSITION;X:");
-		Serial.print(String(cur_pos_x));
-		Serial.print(";Y:");
-		Serial.println(String(cur_pos_y));
+		send_position();
 	}
+}
+
+void send_position() {
+	// Update format is 0bAAAABBBBB where AAAA is the rank and BBBB is the file
+	// One indexed to avoid zero bytes
+	Serial.println((cur_pos_x * 10) + (cur_pos_y + 1));
 }
 
 //

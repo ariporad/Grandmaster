@@ -91,39 +91,35 @@ void read_command() {
 		send_invalid_command();	
 		break;
 	}
+	send_status();
 }
 
 bool last_button_values[NUM_BUTTONS];
 
 void check_buttons() {
+	bool need_to_send_update = false;
 	for (int i = 0; i < NUM_BUTTONS; i++) {
 		bool cur_button_value = digitalRead(BUTTON_PIN_START + i);
 		if (cur_button_value != last_button_values[i]) {
-			Serial.print("TYPE:BUTTON_PRESS;BUTTON:");
-			Serial.print(String(i));
-			Serial.print(";PRESSED:");
-			Serial.println(String(int(cur_button_value)));
 			last_button_values[i] = cur_button_value;
+			need_to_send_update = true;
 		}
 	}
+	if (need_to_send_update) send_status();
 }
 
 void send_status() {
-	Serial.println("TYPE:ANNOUNCEMENT;NAME:BOARD");
-	Serial.print("TYPE:STATUS");
+	// 0b100M1234
+	// Where M is magnet state, and 1234 is the state of each button
+	uint8_t update = 0b10000000;
 	for (int i = 0; i < NUM_BUTTONS; i++) {
-		Serial.print(";BUTTON");
-		Serial.print(String(i));
-		Serial.print(":");
-		Serial.print(String(int(last_button_values[i])));
+		update |= (last_button_values[i] << i);
 	}
-    Serial.print(";MAGNET:");
-    Serial.print(String(digitalRead(MAGNET_PIN)));
-	Serial.println("");
+	update |= digitalRead(MAGNET_PIN) << 4;
+	Serial.write(update);
 }
 
 void send_invalid_command() {
-	Serial.println("TYPE:ERROR;CODE:INVALID_COMMAND");
 }
 
 /**
@@ -143,8 +139,6 @@ void cmd_magnet(uint16_t data) {
 			send_invalid_command();
 			return;
 	}
-	Serial.print("TYPE:MAGNET_STATUS;ENABLED:");
-	Serial.println(String(int(digitalRead(MAGNET_PIN))));
 }
 
 /**
