@@ -31,7 +31,7 @@ class Arduino:
 		Read, parse, and return any pending messages from the serial port.
 		"""
 		while max is None or max > 0:
-			line = self.serial.readline()
+			line = self.serial.readline().decode('utf-8')
 			if line is None:
 				break
 			line = line.strip()
