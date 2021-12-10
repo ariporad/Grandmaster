@@ -42,22 +42,42 @@ class GameController:
 		self.arduino.tick()
 		print(f"TICK({self.state}): buttons={self.arduino.buttons}")
 		if self.state == State.HUMAN_TURN:
+			self.arduino.set_button_light(Button.FUN, False)
+			self.arduino.set_button_light(Button.START, False)
+			self.arduino.set_button_light(Button.COMPUTER, False)
+			self.arduino.set_button_light(Button.PLAYER, True)
 			if self.arduino.buttons[Button.PLAYER]:
 				print("Player button pressed! My turn now!")
 				self.state = State.COMPUTER_TURN
 		elif self.state == State.COMPUTER_TURN:
+			self.arduino.set_button_light(Button.FUN, False)
+			self.arduino.set_button_light(Button.START, False)
+			self.arduino.set_button_light(Button.COMPUTER, True)
+			self.arduino.set_button_light(Button.PLAYER, False)
 			img = self.camera.capture_frame()
-			move = self.chess.make_move(img)
+			move: chess.Move = self.chess.make_move(img)
 			print("Making Move:", move)
-			print("DEBUG OVERRIDE: Moving to b2")
-			self.move_to_square(chess.B2)
-			print("DONE!")
 
+			self.set_electromagnet(False)
+			self.move_to_square(move.from_square)
+			self.set_electromagnet(True)
+			self.move_to_square(move.to_square)
+			self.set_electromagnet(False)
 
-			
-
-
+			print("DONE! It's the human's turn now!")
+			self.state = State.HUMAN_TURN
+			self.arduino.set_button_light(Button.COMPUTER, False)
+			self.arduino.set_button_light(Button.PLAYER, True)
+		else:
+			print("Unknown State:", self.state)
+			self.arduino.set_button_light(Button.FUN, True)
+			self.arduino.set_button_light(Button.START, True)
+			self.arduino.set_button_light(Button.COMPUTER, False)
+			self.arduino.set_button_light(Button.PLAYER, False)
 
 	def main(self):
 		while True:
 			self.tick()
+
+if __name__ == '__main__':
+	GameController().main()
