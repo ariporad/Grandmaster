@@ -11,7 +11,7 @@ from enum import IntEnum
 from cam import Camera
 from random import choice
 from detector import Detector
-from arduino_controller import ArduinoController, Button
+from arduino_manager import ArduinoManager, Button
 
 class State(IntEnum):
 	HUMAN_TURN = 0
@@ -19,7 +19,7 @@ class State(IntEnum):
 	ENDED = 2
 
 class GameController:
-	arduino: ArduinoController
+	arduino: ArduinoManager
 	camera: Camera
 	state: State = State.HUMAN_TURN
 	gantry: serial.Serial
@@ -27,7 +27,7 @@ class GameController:
 	def __init__(self, calibration_file='calibration.json'):
 		self.camera = Camera(calibration_file=calibration_file)
 		self.detector = Detector()
-		self.arduino = ArduinoController()
+		self.arduino = ArduinoManager()
 		self.arduino.on_button_press(Button.PLAYER, self.play_computer_turn)
 
 	def play_computer_turn(self):

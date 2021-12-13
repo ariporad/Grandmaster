@@ -1,28 +1,29 @@
 from typing import *
 import serial
 from time import sleep
-from enum import IntEnum
+from enum import Enum, IntEnum, unique
 import serial.tools.list_ports
 
-GANTRY_ARDUINO_SERIAL_NUMBER = "85033313237351301221"
-BOARD_ARDUINO_SERIAL_NUMBER = "8503331323735140D1D0"
+@unique
+class Device(Enum):
+	# Values are serial numbers
+	GANTRY = "85033313237351301221"
+	BOARD = "8503331323735140D1D0"
 
 class Arduino:
-	name: str
+	device: Device
 	serial: serial.Serial
 	buffer: List[int] = []
 
-	def __init__(self, name: str, serial_number: str,  baudrate=115200):
-		self.name = name.upper()
-		
+	def __init__(self, device: Device, baudrate=115200):
 		found_arduino = False
 		for device in serial.tools.list_ports.comports():
-			if device.serial_number is not None and device.serial_number.upper() == serial_number.upper():
+			if device.serial_number is not None and device.serial_number.upper() == device.upper():
 				found_arduino = True
 				self.serial = serial.Serial(device.device, baudrate=baudrate, timeout=0, exclusive=False)
 		
 		if not found_arduino:
-			raise IOError(f"Couldn't find Arduino! (Name: {name}, SN: {serial_number})")
+			raise IOError(f"Couldn't find Arduino! (Name: {device})")
 
 		sleep(2)
 
@@ -45,7 +46,7 @@ class Button(IntEnum):
 	START = 0
 	FUN = 1
 
-class ArduinoController:
+class ArduinoManager:
 	gantry: Arduino
 	primary: Arduino
 
@@ -55,8 +56,8 @@ class ArduinoController:
 	handlers: Dict[Button, function] = {}
 
 	def __init__(self):
-		self.gantry = Arduino("GANTRY", GANTRY_ARDUINO_SERIAL_NUMBER)
-		self.board = Arduino("BOARD", BOARD_ARDUINO_SERIAL_NUMBER)
+		self.gantry = Arduino(Device.GANTRY)
+		self.board = Arduino(Device.BOARD)
 		self.buttons = {button: False for button in Button}
 
 	def on_button_press(self, button: Button, handler: function):
