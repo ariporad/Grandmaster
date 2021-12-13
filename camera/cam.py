@@ -25,7 +25,7 @@ class Camera:
 
     def capture_frame(self):
         # There's an annoying frame buffer we want to drain
-        for _ in range(15):
+        for _ in range(1):
             self.camera.read()
 
         success, frame = self.camera.read()
