@@ -41,18 +41,19 @@ class GameController:
 		x = chess.square_file(square)
 		y = chess.square_rank(square)
 		print("MOVING TO SQUARE:", x, y, ((x + 1) << 4) | (y + 1))
-		self.gantry.write(bytes([(((x + 1) << 4) | (y + 1))]))
+		self.gantry.write(str((((x + 1) << 4) | (y + 1))).encode('utf-8'))
 		self.gantry.flush()
 		self.gantry.flushInput()
 		self.gantry.flushOutput()
 		# self.arduino.move_to_square(*pos)
 		print("MOVED")
 		if block:
-			sleep(15)
-			# while self.arduino.gantry_pos != pos:
-			# 	print("WAITING: target=", pos, "cur=", self.arduino.gantry_pos)
-			# 	self.arduino.tick()
-			# 	sleep(0.1)
+			new_x = -1
+			new_y = -1
+			while new_x != x or new_y != y:
+				for byte in [int(x) for x in self.gantry.read()]:
+					new_x = (byte >> 4) - 1
+					new_y = (byte & 0xF) - 1
 	
 	def set_electromagnet(self, enabled: bool, block=True):
 		print("SETITNG EMAG:", enabled)
@@ -76,7 +77,8 @@ class GameController:
 			self.arduino.set_button_light(Button.START, False)
 			self.arduino.set_button_light(Button.COMPUTER, False)
 			self.arduino.set_button_light(Button.PLAYER, True)
-			if self.arduino.buttons[Button.PLAYER]:
+			# Computer button here is just convenient for debugging
+			if self.arduino.buttons[Button.PLAYER] or self.arduino.buttons[Button.COMPUTER]:
 				print("Player button pressed! My turn now!")
 				self.state = State.COMPUTER_TURN
 		elif self.state == State.COMPUTER_TURN:
@@ -87,7 +89,7 @@ class GameController:
 			self.arduino.set_button_light(Button.PLAYER, False)
 			# img = self.camera.capture_frame()
 			# move: chess.Move = self.chess.make_move(img)
-			move = chess.Move.from_uci("b2c3")
+			move = chess.Move.from_uci("a1b2")
 			print("Making Move:", move)
 
 			self.set_electromagnet(False)
@@ -108,6 +110,8 @@ class GameController:
 			self.arduino.set_button_light(Button.PLAYER, False)
 
 	def main(self):
+		self.tick()
+		print("Grandmaster Ready")
 		while True:
 			self.tick()
 

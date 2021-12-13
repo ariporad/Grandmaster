@@ -42,10 +42,10 @@ class LightMode(IntEnum):
 	DEFAULT = 1
 
 class Button(IntEnum):
-	COMPUTER = 0
-	PLAYER = 1
-	START = 2
-	FUN = 3
+	COMPUTER = 2
+	PLAYER = 3
+	START = 0
+	FUN = 1
 
 class ArduinoController:
 	gantry: Arduino
