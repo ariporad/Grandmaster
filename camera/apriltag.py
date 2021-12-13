@@ -1,3 +1,9 @@
+"""
+A cross-platform wrapper for Apriltag libraries.
+
+dt_apriltags only works on Linux while apriltag only works on macOS (arm64). They have very similar
+APIs, so this module wraps them for seamless use.
+"""
 from typing import *
 from collections import defaultdict
 
