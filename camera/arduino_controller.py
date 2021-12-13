@@ -27,9 +27,7 @@ class Arduino:
 		sleep(2)
 
 	def write(self, data: int):
-		if self.name == 'GANTRY':
-			print("Writing to:", self.name, ":", bytes(str(data), 'utf-8'))
-		self.serial.write(bytes(str(data) + '\n', 'utf-8'))
+		self.gantry.write(str(data).encode('utf-8'))
 		self.serial.flush()
 		self.serial.flushInput()
 		self.serial.flushOutput()
@@ -60,32 +58,42 @@ class ArduinoController:
 		self.board = Arduino("BOARD", BOARD_ARDUINO_SERIAL_NUMBER)
 		self.buttons = {button: False for button in Button}
 	
-	def move_to_square(self, rank: int, file: int):
+	def move_to_square(self, x: int, y: int, block: bool=True):
 		"""
 		File is accepted as an integer for simplicity, and to allow accessing the graveyard: The
 		normal files (A-H) are 0-7, respectively, and the graveyard is files 8-9.
 		"""
-		self.gantry.write(((file + 1) << 4) | (rank + 1))
+		self.gantry.write(((x + 1) << 4) | (y + 1))
+		if block:
+			while self.gantry_pos != (x, y):
+				self.tick()
 	
-	def set_electromagnet(self, enabled: bool):
+	def set_electromagnet(self, enabled: bool, block: bool=True):
 		self.board.write(0b110 if enabled else 0b010)
+		if block:
+			while self.electromagnet_enabled != enabled:
+				self.tick()
 
 	def set_light_mode(self, mode: LightMode):
 		print("Light Modes Not Implemented, set to:", mode)
 
-	def set_button_light(self, button: Button, enabled: bool):
+	def set_button_light(self, button: Button, enabled: bool, others: Optional[bool]=None):
 		self.board.write((int(enabled) << 4) | (button << 2) | 0b01)
+		if others is not None:
+			for button in (b for b in Button if b != button):
+				self.set_button_light(button, others, others=None)
 
 	def tick(self):
 		for message in self.board.read():
 			for button in Button:
-				self.buttons[button] = bool(message & (1 << button))
+				pressed = bool(message & (1 << button))
+				self.buttons[button] = pressed
 			self.electromagnet_enabled = bool(message & (1 << 4))
 
 		for message in self.gantry.read():
-			message = message & 0b11111111
+			message = message & 0xFF
 			x = (message >> 4) - 1
-			y = (message & 0b1111) - 1
+			y = (message & 0xF) - 1
 			self.gantry_pos = (x, y)
 
 

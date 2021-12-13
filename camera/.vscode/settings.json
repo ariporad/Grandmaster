@@ -1,0 +1,14 @@
+{
+	"python.languageServer": "Pylance",
+	"python.linting.pylintEnabled": false,
+	"python.analysis.diagnosticSeverityOverrides": {
+		"reportMissingModuleSource": "none"
+	},
+	"python.analysis.extraPaths": [
+		"",
+		"/Users/ariporad/.vscode/extensions/joedevivo.vscode-circuitpython-0.1.15/stubs",
+		"/Users/ariporad/Library/Application Support/Code/User/globalStorage/joedevivo.vscode-circuitpython/bundle/20211213/adafruit-circuitpython-bundle-py-20211213/lib"
+	],
+	"circuitpython.board.version": null,
+	"cmake.configureOnOpen": false
+}
