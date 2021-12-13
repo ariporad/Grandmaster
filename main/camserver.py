@@ -1,3 +1,6 @@
+"""
+This file runs on the Raspberry Pi and serves images from the PiCam.
+"""
 import cv2
 from time import time
 from random import randint
