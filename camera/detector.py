@@ -129,10 +129,11 @@ class Detector:
                 img[y-10:y+11, x-10:x+11, :] = [255, 0, 0]
             
             cv2.imshow("Squares", img)
-            cv2.waitKey(0)
+            # cv2.waitKey(0)
 
 
-        for tag in sorted((tag for tag_id, tag in tags.items() if tag_id >= 128), key=lambda tag: distance(board_center, tag.center), reverse=True):
+        for tag in sorted((tag for tag_id, tag in tags.items() if tag_id >= 100), key=lambda tag: distance(board_center, tag.center), reverse=True):
+            print("FOUND TAG:", tag.tag_id)
             # HACK: closest_item isn't working, so do this which is bad but works
             def _key(item):
                 _, pos = item

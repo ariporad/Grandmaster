@@ -8,39 +8,39 @@ import chess
 
 # (name, symbol, april tag ID)
 PIECES = [
-	('WHITE_ROOK_QS',   'R', 100),
-	('WHITE_KNIGHT_QS', 'N', 101),
-	('WHITE_BISHOP_QS', 'B', 102), # dark squares only
-	('WHITE_QUEEN',     'Q', 103),
-	('WHITE_KING',      'K', 104),
-	('WHITE_BISHOP_KS', 'B', 105), # light squares only
-	('WHITE_KNIGHT_KS', 'N', 106),
-	('WHITE_ROOK_KS',   'R', 107),
-	('WHITE_PAWN_A',    'P', 108),
-	('WHITE_PAWN_B',    'P', 109),
-	('WHITE_PAWN_C',    'P', 110),
-	('WHITE_PAWN_D',    'P', 111),
-	('WHITE_PAWN_E',    'P', 112),
-	('WHITE_PAWN_F',    'P', 113),
-	('WHITE_PAWN_G',    'P', 114),
-	('WHITE_PAWN_H',    'P', 115),
+	('WHITE_ROOK_QS',   'R', 200),
+	('WHITE_KNIGHT_QS', 'N', 201),
+	('WHITE_BISHOP_QS', 'B', 202), # dark squares only
+	('WHITE_QUEEN',     'Q', 203),
+	('WHITE_KING',      'K', 204),
+	('WHITE_BISHOP_KS', 'B', 205), # light squares only
+	('WHITE_KNIGHT_KS', 'N', 206),
+	('WHITE_ROOK_KS',   'R', 207),
+	('WHITE_PAWN_A',    'P', 208),
+	('WHITE_PAWN_B',    'P', 209),
+	('WHITE_PAWN_C',    'P', 210),
+	('WHITE_PAWN_D',    'P', 211),
+	('WHITE_PAWN_E',    'P', 212),
+	('WHITE_PAWN_F',    'P', 213),
+	('WHITE_PAWN_G',    'P', 214),
+	('WHITE_PAWN_H',    'P', 215),
 
-	('BLACK_ROOK_QS',   'r', 200),
-	('BLACK_KNIGHT_QS', 'n', 201),
-	('BLACK_BISHOP_QS', 'b', 202), # dark squares only
-	('BLACK_QUEEN',     'q', 203),
-	('BLACK_KING',      'k', 204),
-	('BLACK_BISHOP_KS', 'b', 205), # light squares only
-	('BLACK_KNIGHT_KS', 'n', 206),
-	('BLACK_ROOK_KS',   'r', 207),
-	('BLACK_PAWN_A',    'p', 208),
-	('BLACK_PAWN_B',    'p', 209),
-	('BLACK_PAWN_C',    'p', 210),
-	('BLACK_PAWN_D',    'p', 211),
-	('BLACK_PAWN_E',    'p', 212),
-	('BLACK_PAWN_F',    'p', 213),
-	('BLACK_PAWN_G',    'p', 214),
-	('BLACK_PAWN_H',    'p', 215)
+	('BLACK_ROOK_QS',   'r', 100),
+	('BLACK_KNIGHT_QS', 'n', 101),
+	('BLACK_BISHOP_QS', 'b', 102), # dark squares only
+	('BLACK_QUEEN',     'q', 103),
+	('BLACK_KING',      'k', 104),
+	('BLACK_BISHOP_KS', 'b', 105), # light squares only
+	('BLACK_KNIGHT_KS', 'n', 106),
+	('BLACK_ROOK_KS',   'r', 107),
+	('BLACK_PAWN_A',    'p', 108),
+	('BLACK_PAWN_B',    'p', 109),
+	('BLACK_PAWN_C',    'p', 110),
+	('BLACK_PAWN_D',    'p', 111),
+	('BLACK_PAWN_E',    'p', 112),
+	('BLACK_PAWN_F',    'p', 113),
+	('BLACK_PAWN_G',    'p', 114),
+	('BLACK_PAWN_H',    'p', 115)
 ]
 
 Piece = IntEnum('Piece', ((name, tag_id) for name, _, tag_id in PIECES))
@@ -55,5 +55,7 @@ class Tracker:
 
 		for location, tag_id in positions:
 			board.set_piece_at(chess.parse_square(location), chess.Piece.from_symbol(Piece(tag_id).symbol))
+		
+		board.turn = chess.BLACK
 
 		return board

@@ -1,6 +1,9 @@
 from typing import *
 
+import cv2
 import chess
+import requests
+import numpy as np
 import serial
 import serial.tools.list_ports
 from time import sleep
@@ -65,6 +68,13 @@ class GameController:
 			# 	print("WAITING EMAG: cur=", self.arduino.electromagnet_enabled, "target=", enabled)
 			# 	self.arduino.tick()
 			# 	sleep(0.1)
+	
+	def get_image(self):
+		r = requests.get('http://192.168.34.100:5555/camera.png', stream=True).raw
+		# r = requests.get('http://grandmaster.local:5555/camera.png')
+		# if r.status_code != 200:
+		# 	raise IOError("Failed to fetch camera!")
+		return cv2.imdecode(np.asarray(bytearray(r.read()), dtype='uint8'), cv2.IMREAD_COLOR)
 
 	def tick(self):
 		self.arduino.tick()
@@ -87,9 +97,18 @@ class GameController:
 			self.arduino.set_button_light(Button.START, False)
 			self.arduino.set_button_light(Button.COMPUTER, True)
 			self.arduino.set_button_light(Button.PLAYER, False)
-			# img = self.camera.capture_frame()
+			print("Fetching image...")
+			img = self.get_image() #self.camera.capture_frame()
+			print("Got image!")
+			cv2.imshow("Fetched image", img)
+			# cv2.waitKey(0)
+			# cv2.destroyAllWindows()
+			board: chess.Board = self.chess.get_current_board(img)
+			print("Got Board:")
+			print(board)
+			move: chess.Move = self.chess.pick_move(board)
 			# move: chess.Move = self.chess.make_move(img)
-			move = chess.Move.from_uci("a1b2")
+			# move = chess.Move.from_uci("a1b2")
 			print("Making Move:", move)
 
 			self.set_electromagnet(False)

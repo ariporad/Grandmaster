@@ -12,7 +12,7 @@ class ChessController:
 		self.tracker = Tracker()
 
 	def get_current_board(self, img):
-		piece_positions = self.detector.detect_piece_positions(img)
+		piece_positions = self.detector.detect_piece_positions(img, True)
 		return self.tracker.generate_board(piece_positions)
 
 	def pick_move(self, board: chess.Board):
@@ -20,6 +20,6 @@ class ChessController:
 
 	def make_move(self, img):
 		board = self.get_current_board(img)
-		move = self.pick_moves(board)
+		move = self.pick_move(board)
 		return move
 
