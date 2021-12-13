@@ -69,12 +69,21 @@ class GameController:
 			# 	self.arduino.tick()
 			# 	sleep(0.1)
 	
-	def get_image(self):
-		r = requests.get('http://192.168.34.100:5555/camera.png', stream=True).raw
-		# r = requests.get('http://grandmaster.local:5555/camera.png')
-		# if r.status_code != 200:
-		# 	raise IOError("Failed to fetch camera!")
-		return cv2.imdecode(np.asarray(bytearray(r.read()), dtype='uint8'), cv2.IMREAD_COLOR)
+	def get_image(self, retry=5):
+		try:
+			r = requests.get('http://192.168.34.100:5555/camera.png', stream=True).raw
+			# r = requests.get('http://grandmaster.local:5555/camera.png')
+			# if r.status_code != 200:
+			# 	raise IOError("Failed to fetch camera!")
+			return cv2.imdecode(np.asarray(bytearray(r.read()), dtype='uint8'), cv2.IMREAD_COLOR)
+		except Exception as err:
+			if retry > 0:
+				print(f"Failed to fetch image, retrying {retry} more times in 3 seconds!", err)
+				sleep(3)
+				return self.get_image(retry - 1)
+			else:
+				raise
+
 
 	def tick(self):
 		self.arduino.tick()
