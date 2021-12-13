@@ -19,7 +19,7 @@ class Arduino:
 		for device in serial.tools.list_ports.comports():
 			if device.serial_number is not None and device.serial_number.upper() == serial_number.upper():
 				found_arduino = True
-				self.serial = serial.Serial(device.device, baudrate=baudrate, timeout=0.5, exclusive=False)
+				self.serial = serial.Serial(device.device, baudrate=baudrate, timeout=0, exclusive=False)
 		
 		if not found_arduino:
 			raise IOError(f"Couldn't find Arduino! (Name: {name}, SN: {serial_number})")
@@ -52,13 +52,19 @@ class ArduinoController:
 	buttons: Dict[Button, bool]
 	gantry_pos: Tuple[int, int] = (0, 0)
 	electromagnet_enabled: bool = False
+	handlers: Dict[Button, function] = {}
 
 	def __init__(self):
 		self.gantry = Arduino("GANTRY", GANTRY_ARDUINO_SERIAL_NUMBER)
 		self.board = Arduino("BOARD", BOARD_ARDUINO_SERIAL_NUMBER)
 		self.buttons = {button: False for button in Button}
+
+	def on_button_press(self, button: Button, handler: function):
+		if button in self.handlers and self.handlers[button] != handler:
+			print("WARNING: overriding handler for button:", button)
+		self.handlers[button] = handler
 	
-	def move_to_square(self, x: int, y: int, block: bool=True):
+	def move_gantry(self, x: int, y: int, block: bool=True):
 		"""
 		File is accepted as an integer for simplicity, and to allow accessing the graveyard: The
 		normal files (A-H) are 0-7, respectively, and the graveyard is files 8-9.
@@ -66,13 +72,13 @@ class ArduinoController:
 		self.gantry.write(((x + 1) << 4) | (y + 1))
 		if block:
 			while self.gantry_pos != (x, y):
-				self.tick()
+				self.update()
 	
 	def set_electromagnet(self, enabled: bool, block: bool=True):
 		self.board.write(0b110 if enabled else 0b010)
 		if block:
 			while self.electromagnet_enabled != enabled:
-				self.tick()
+				self.update()
 
 	def set_light_mode(self, mode: LightMode):
 		print("Light Modes Not Implemented, set to:", mode)
@@ -83,7 +89,7 @@ class ArduinoController:
 			for button in (b for b in Button if b != button):
 				self.set_button_light(button, others, others=None)
 
-	def tick(self):
+	def update(self):
 		for message in self.board.read():
 			for button in Button:
 				pressed = bool(message & (1 << button))
