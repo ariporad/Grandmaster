@@ -1,4 +1,5 @@
 import cv2
+from os.path import dirname, join
 from calibrate import CameraCalibration
 
 class CameraError(Exception):
@@ -8,7 +9,7 @@ class Camera:
     camera: cv2.VideoCapture
     calibration: CameraCalibration
 
-    def __init__(self, camera_idx=0, calibration_file='calibration.json'):
+    def __init__(self, camera_idx=0, calibration_file=join(dirname(__file__), 'calibration.json')):
         self.calibration = CameraCalibration.read(calibration_file)
         self.camera = cv2.VideoCapture(camera_idx)
         self.camera.set(cv2.CAP_PROP_BUFFERSIZE, 1)

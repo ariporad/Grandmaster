@@ -24,8 +24,8 @@ class GameController:
 	state: State = State.HUMAN_TURN
 	gantry: serial.Serial
 
-	def __init__(self, calibration_file='calibration.json'):
-		self.camera = Camera(calibration_file=calibration_file)
+	def __init__(self):
+		self.camera = Camera()
 		self.detector = Detector()
 		self.arduino = ArduinoManager()
 		self.arduino.on_button_press(Button.PLAYER, self.play_computer_turn)
@@ -92,6 +92,3 @@ class GameController:
 		self.start_human_turn()
 		while True:
 			self.arduino.tick()
-
-if __name__ == '__main__':
-	GameController().main()

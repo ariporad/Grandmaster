@@ -53,14 +53,14 @@ class ArduinoManager:
 	buttons: Dict[Button, bool]
 	gantry_pos: Tuple[int, int] = (0, 0)
 	electromagnet_enabled: bool = False
-	handlers: Dict[Button, function] = {}
+	handlers: Dict[Button, Callable] = {}
 
 	def __init__(self):
 		self.gantry = Arduino(Device.GANTRY)
 		self.board = Arduino(Device.BOARD)
 		self.buttons = {button: False for button in Button}
 
-	def on_button_press(self, button: Button, handler: function):
+	def on_button_press(self, button: Button, handler: Callable):
 		if button in self.handlers and self.handlers[button] != handler:
 			print("WARNING: overriding handler for button:", button)
 		self.handlers[button] = handler
@@ -94,7 +94,10 @@ class ArduinoManager:
 		for message in self.board.read():
 			for button in Button:
 				pressed = bool(message & (1 << button))
+				change = pressed != self.buttons[button]
 				self.buttons[button] = pressed
+				if change:
+					self.handlers[button]()
 			self.electromagnet_enabled = bool(message & (1 << 4))
 
 		for message in self.gantry.read():
