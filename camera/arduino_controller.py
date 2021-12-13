@@ -19,7 +19,7 @@ class Arduino:
 		for device in serial.tools.list_ports.comports():
 			if device.serial_number is not None and device.serial_number.upper() == serial_number.upper():
 				found_arduino = True
-				self.serial = serial.Serial(device.device, baudrate=baudrate, timeout=0, exclusive=True, parity=serial.PARITY_EVEN, stopbits=serial.STOPBITS_TWO)
+				self.serial = serial.Serial(device.device, baudrate=baudrate, timeout=0.5, exclusive=False)
 		
 		if not found_arduino:
 			raise IOError(f"Couldn't find Arduino! (Name: {name}, SN: {serial_number})")
@@ -27,9 +27,12 @@ class Arduino:
 		sleep(2)
 
 	def write(self, data: int):
-		print("Writing to:", self.name, ":", bytes(str(data), 'utf-8'))
-		self.serial.write(bytes(str(data), 'utf-8'))
+		if self.name == 'GANTRY':
+			print("Writing to:", self.name, ":", bytes(str(data), 'utf-8'))
+		self.serial.write(bytes(str(data) + '\n', 'utf-8'))
 		self.serial.flush()
+		self.serial.flushInput()
+		self.serial.flushOutput()
 
 	def read(self):
 		return [int(x) for x in self.serial.read() if int(x) != 0]

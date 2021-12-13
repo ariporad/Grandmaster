@@ -1,6 +1,8 @@
 from typing import *
 
 import chess
+import serial
+import serial.tools.list_ports
 from time import sleep
 from enum import IntEnum, auto
 from cam import Camera
@@ -12,37 +14,56 @@ class State(IntEnum):
 	COMPUTER_TURN = 1
 	ENDED = 2
 
+GANTRY_ARDUINO_SERIAL_NUMBER = "85033313237351301221"
+
 class GameController:
 	arduino: ArduinoController
 	chess: ChessController
 	camera: Camera
 	state: State = State.HUMAN_TURN
+	gantry: serial.Serial
 
 	def __init__(self, calibration_file='calibration.json'):
 		self.camera = Camera(calibration_file=calibration_file)
 		self.chess = ChessController()
 		self.arduino = ArduinoController()
 
+		found_arduino = False
+		for device in serial.tools.list_ports.comports():
+			if device.serial_number is not None and device.serial_number.upper() == GANTRY_ARDUINO_SERIAL_NUMBER.upper():
+				found_arduino = True
+				self.gantry = serial.Serial(device.device, baudrate=115200, timeout=0.5, exclusive=False)
+		
+		if not found_arduino:
+			raise IOError("Couldn't find Arduino!")
+
 	def move_to_square(self, square: chess.Square, block=True):
-		pos = (chess.square_file(square), chess.square_rank(square))
-		print("MOVING TO SQUARE:", pos)
-		self.arduino.move_to_square(*pos)
+		x = chess.square_file(square)
+		y = chess.square_rank(square)
+		print("MOVING TO SQUARE:", x, y, ((x + 1) << 4) | (y + 1))
+		self.gantry.write(bytes([(((x + 1) << 4) | (y + 1))]))
+		self.gantry.flush()
+		self.gantry.flushInput()
+		self.gantry.flushOutput()
+		# self.arduino.move_to_square(*pos)
 		print("MOVED")
 		if block:
-			while self.arduino.gantry_pos != pos:
-				print("WAITING: target=", pos, "cur=", self.arduino.gantry_pos)
-				self.arduino.tick()
-				sleep(0.1)
+			sleep(15)
+			# while self.arduino.gantry_pos != pos:
+			# 	print("WAITING: target=", pos, "cur=", self.arduino.gantry_pos)
+			# 	self.arduino.tick()
+			# 	sleep(0.1)
 	
 	def set_electromagnet(self, enabled: bool, block=True):
 		print("SETITNG EMAG:", enabled)
 		self.arduino.set_electromagnet(enabled)
 		print("SET EMAG:", enabled)
 		if block:
-			while self.arduino.electromagnet_enabled != enabled:
-				print("WAITING EMAG: cur=", self.arduino.electromagnet_enabled, "target=", enabled)
-				self.arduino.tick()
-				sleep(0.1)
+			sleep(2)
+			# while self.arduino.electromagnet_enabled != enabled:
+			# 	print("WAITING EMAG: cur=", self.arduino.electromagnet_enabled, "target=", enabled)
+			# 	self.arduino.tick()
+			# 	sleep(0.1)
 
 	def tick(self):
 		self.arduino.tick()
