@@ -9,7 +9,9 @@ import serial.tools.list_ports
 from time import sleep
 from enum import IntEnum
 from cam import Camera
-from chess_controller import ChessController
+from random import choice
+from tracker import Tracker
+from detector import Detector
 from arduino_controller import ArduinoController, Button
 
 class State(IntEnum):
@@ -21,14 +23,14 @@ GANTRY_ARDUINO_SERIAL_NUMBER = "85033313237351301221"
 
 class GameController:
 	arduino: ArduinoController
-	chess: ChessController
 	camera: Camera
 	state: State = State.HUMAN_TURN
 	gantry: serial.Serial
 
 	def __init__(self, calibration_file='calibration.json'):
 		self.camera = Camera(calibration_file=calibration_file)
-		self.chess = ChessController()
+		self.detector = Detector()
+		self.tracker = Tracker()
 		self.arduino = ArduinoController()
 		self.arduino.on_button_press(Button.PLAYER, self.play_computer_turn)
 
@@ -47,10 +49,11 @@ class GameController:
 		# cv2.waitKey(0)
 		# cv2.destroyAllWindows()
 
-		board: chess.Board = self.chess.get_current_board(img)
+		piece_positions = self.detector.detect_piece_positions(img)
+		board = self.tracker.generate_board(piece_positions)
 		print("Got Board:")
 		print(board)
-		move: chess.Move = self.chess.pick_move(board)
+		move: chess.Move = self.pick_move(board)
 		# move = chess.Move.from_uci("a1b2")
 		print("Making Move:", move)
 
@@ -63,6 +66,9 @@ class GameController:
 		print("DONE! It's the human's turn now!")
 		self.start_human_turn()
 	
+	def pick_move(self, board: chess.Board):
+		return choice([move for move in board.legal_moves if board.piece_at(move.from_square).piece_type != chess.KNIGHT])
+
 	def start_human_turn(self):
 		self.state = State.HUMAN_TURN
 		self.arduino.set_button_light(Button.PLAYER, True, others=False)
