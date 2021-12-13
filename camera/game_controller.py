@@ -10,7 +10,6 @@ from time import sleep
 from enum import IntEnum
 from cam import Camera
 from random import choice
-from tracker import Tracker
 from detector import Detector
 from arduino_controller import ArduinoController, Button
 
@@ -18,8 +17,6 @@ class State(IntEnum):
 	HUMAN_TURN = 0
 	COMPUTER_TURN = 1
 	ENDED = 2
-
-GANTRY_ARDUINO_SERIAL_NUMBER = "85033313237351301221"
 
 class GameController:
 	arduino: ArduinoController
@@ -30,7 +27,6 @@ class GameController:
 	def __init__(self, calibration_file='calibration.json'):
 		self.camera = Camera(calibration_file=calibration_file)
 		self.detector = Detector()
-		self.tracker = Tracker()
 		self.arduino = ArduinoController()
 		self.arduino.on_button_press(Button.PLAYER, self.play_computer_turn)
 
@@ -49,8 +45,7 @@ class GameController:
 		# cv2.waitKey(0)
 		# cv2.destroyAllWindows()
 
-		piece_positions = self.detector.detect_piece_positions(img)
-		board = self.tracker.generate_board(piece_positions)
+		board = self.detector.detect_board(img, show=False)
 		print("Got Board:")
 		print(board)
 		move: chess.Move = self.pick_move(board)
