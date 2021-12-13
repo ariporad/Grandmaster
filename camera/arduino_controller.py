@@ -1,5 +1,6 @@
 from typing import *
-from serial import Serial
+import serial
+from time import sleep
 from enum import IntEnum
 import serial.tools.list_ports
 
@@ -8,7 +9,8 @@ BOARD_ARDUINO_SERIAL_NUMBER = "8503331323735140D1D0"
 
 class Arduino:
 	name: str
-	serial: Serial
+	serial: serial.Serial
+	buffer: List[int] = []
 
 	def __init__(self, name: str, serial_number: str,  baudrate=115200):
 		self.name = name.upper()
@@ -17,62 +19,23 @@ class Arduino:
 		for device in serial.tools.list_ports.comports():
 			if device.serial_number is not None and device.serial_number.upper() == serial_number.upper():
 				found_arduino = True
-				self.serial = Serial(device.device, baudrate=baudrate, timeout=0.1)
+				self.serial = serial.Serial(device.device, baudrate=baudrate, timeout=0.5, exclusive=False)
 		
 		if not found_arduino:
 			raise IOError(f"Couldn't find Arduino! (Name: {name}, SN: {serial_number})")
 
+		sleep(2)
+
 	def write(self, data: int):
-		self.serial.write(bytes(str(data), 'utf-8'))
+		if self.name == 'GANTRY':
+			print("Writing to:", self.name, ":", bytes(str(data), 'utf-8'))
+		self.serial.write(bytes(str(data) + '\n', 'utf-8'))
 		self.serial.flush()
+		self.serial.flushInput()
+		self.serial.flushOutput()
 
-	def get_messages(self, max=None) -> Iterator[Dict]:
-		"""
-		Read, parse, and return any pending messages from the serial port.
-		"""
-		while max is None or max > 0:
-			try:
-				line = self.serial.readline().decode('utf-8')
-			except UnicodeDecodeError:
-				continue
-			if line is None:
-				break
-			line = line.strip()
-			if line == "" or not line.startswith('TYPE:'):
-				continue
-			msg = self.parse_message(line)
-			if msg['TYPE'] == 'ANNOUNCEMENT':
-				if msg['NAME'].upper() != self.name.upper():
-					print(f"WARNING: Arduino '{self.name}' got announcement for name '{msg['NAME']}")
-			else:
-				if max is not None:
-					max -= 1
-				yield msg
-
-	def parse_message(self, msg: str):
-		"""
-		Messages from the Arduino are ascii-encoded, key-value pairs.
-		Format:
-		> KEY:VALUE;KEY:VALUE
-		Over the serial connection, they are newline-deliminated.
-		Keys may only contain uppercase letters. Values may contain either (but not both):
-		a) uppercase letters and underscores, OR
-		b) digits 0-9
-		"""
-		data = {}
-		for pair in msg.upper().split(';'):
-			print("PAIR:", repr(pair))
-			key, value = pair.split(':')
-			# attempt to convert value to an int
-			try:
-				value = int(value)
-			except ValueError:
-				pass # just use the string value
-			data[key] = value
-		if 'TYPE' not in data:
-			print(f"WARNING(Arduino:{self.name}): Illegal message received:", data)
-		return data
-
+	def read(self):
+		return [int(x) for x in self.serial.read() if int(x) != 0]
 
 class LightMode(IntEnum):
 	OFF = 0
@@ -102,7 +65,7 @@ class ArduinoController:
 		File is accepted as an integer for simplicity, and to allow accessing the graveyard: The
 		normal files (A-H) are 0-7, respectively, and the graveyard is files 8-9.
 		"""
-		self.gantry.write((file << 2) | rank)
+		self.gantry.write(((file + 1) << 4) | (rank + 1))
 	
 	def set_electromagnet(self, enabled: bool):
 		self.board.write(0b110 if enabled else 0b010)
@@ -114,23 +77,16 @@ class ArduinoController:
 		self.board.write((int(enabled) << 4) | (button << 2) | 0b01)
 
 	def tick(self):
-		for message in self.board.get_messages():
-			if message['TYPE'] == 'BUTTON_PRESS':
-				self.buttons[Button[message['BUTTON']]] = bool(message['PRESSED'])
-			elif message['TYPE'] == 'MAGNET_STATUS':
-				self.electromagnet_enabled = bool(message['ENABLED'])
-			elif message['TYPE'] == 'STATUS':
-				self.electromagnet_enabled = bool(message['MAGNET'])
-				for button in Button:
-					self.buttons[button] = bool(message[f"BUTTON{button}"]) or self.buttons[button]
-			else:
-				print("Got unknown message from board:", message)
+		for message in self.board.read():
+			for button in Button:
+				self.buttons[button] = bool(message & (1 << button))
+			self.electromagnet_enabled = bool(message & (1 << 4))
 
-		for message in self.gantry.get_messages():
-			if message['TYPE'] == 'POSITION':
-				self.gantry = (message['X'], message['Y'])
-			else:
-				print("Got unknown message from gantry:", message)
+		for message in self.gantry.read():
+			message = message & 0b11111111
+			x = (message >> 4) - 1
+			y = (message & 0b1111) - 1
+			self.gantry_pos = (x, y)
 
 
 

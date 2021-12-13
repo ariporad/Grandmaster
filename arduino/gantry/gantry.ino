@@ -90,6 +90,12 @@ void send_position() {
   Serial.write(((cur_pos_x + 1) << 4) | (cur_pos_y + 1));
 }
 
+void send_position() {
+	// Update format is 0bAAAABBBBB where AAAA is the rank and BBBB is the file
+	// One indexed to avoid zero bytes
+	Serial.write(((cur_pos_x + 1) << 4) | (cur_pos_y + 1))
+}
+
 //
 // move both X & Y motors together in a coordinated way, such that they each
 // start and stop at the same time, even if one motor moves a greater distance

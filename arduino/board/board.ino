@@ -32,7 +32,7 @@ void setup()
 	digitalWrite(STATUS_LED_PIN, LOW);
 
 	// Setup the Serial interface
-	Serial.begin(115200);
+	Serial.begin(115200, SERIAL_8O2);
 	Serial.setTimeout(50); // Make sure we don't spend too much time waiting for serial input
 
 	// Configure pins
