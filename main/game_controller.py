@@ -8,7 +8,7 @@ import serial
 import serial.tools.list_ports
 from time import sleep
 from enum import IntEnum
-from cam import Camera
+from camera import Camera
 from random import choice
 from detector import Detector
 from arduino_manager import ArduinoManager, Button

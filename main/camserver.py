@@ -5,7 +5,7 @@ import cv2
 from time import time
 from random import randint
 from flask import Flask, make_response
-from cam import Camera
+from camera import Camera
 
 app = Flask(__name__)
 cam = Camera()
