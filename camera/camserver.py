@@ -10,7 +10,7 @@ cam = Camera()
 start_time = time()
 fav_number = randint(1, 1000)
 
-@app.route('/camera.jpg')
+@app.route('/camera.png')
 def camera():
 	img = cam.capture_frame()
 	success, buffer = cv2.imencode('.png', img)
@@ -18,7 +18,7 @@ def camera():
 	if not success:
 		return 500
 
-	return buffer.tobytes()
+	return buffer.tobytes(), { 'Content-Type': 'image/png' }
 
 
 @app.route('/info.json')
