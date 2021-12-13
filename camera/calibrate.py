@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from sys import exit
 import json
 import numpy as np
 import cv2
@@ -7,12 +6,13 @@ import cv2
 
 @dataclass
 class CameraCalibration:
+    """
+    A serializable data class to contain information about camera calibration.
+    """
     camera_matrix: np.array
     distortion: np.array
     width: int
     height: int
-    # rotation: np.array
-    # translation: np.array
 
     JSON_TYPE = 'edu.olin.pie.grandmaster.camera-calibration'
 
@@ -40,6 +40,9 @@ class CameraCalibration:
 
 
 def calibrate(images, draw=False):
+    """
+    Calibrate a camera from some test images.
+    """
     # Define the dimensions of checkerboard
     CHESSBOARD_SIZE_SQUARES = (6, 9)
 
@@ -118,32 +121,20 @@ def calibrate(images, draw=False):
 
 
 if __name__ == '__main__':
+    """
+    Simple CLI to generate a camera calibration from the images in calibration_test_images/*.jpg
+    """
+    import os
     from sys import argv
     draw = '--draw' in argv
-    # if '--nocamera' in argv:
-    #     print("Reading image from cache (calibration_raw.jpg)")
-    #     image = cv2.imread("calibration_raw.jpg")
-    # else:
-    #     print("Reading from camera...")
-    #     camera = cv2.VideoCapture(0)
-    #     camera.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-    #     camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-    #     camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
-    #     success, image = camera.read()
 
-    #     if not success or image is None:
-    #         print("FAILED to read image!")
-    #         exit(1)
-    
-    #     print("Captured Image! Caching...")
-    #     cv2.imwrite('calibration_raw.jpg', image)
-    import os
-
+    img_dir = 'calibration_test_images/'
     images = []
 
-    for file in os.listdir("camera_calibration"):
+    print(f"Reading images from {img_dir}*.jpg")
+    for file in os.listdir(img_dir):
         if file.endswith(".jpg"):
-            path = os.path.join("camera_calibration", file)
+            path = os.path.join(img_dir, file)
             image = cv2.imread(path)
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             print("Read Image:", path)
@@ -158,10 +149,6 @@ if __name__ == '__main__':
         print(calibration.camera_matrix)
         print("\nDistortion:")
         print(calibration.distortion)
-        # print("\nRotation:")
-        # print(calibration.rotation)
-        # print("\nTranslation:")
-        # print(calibration.translation)
 
         print("Writing to file (calibration.json)...")
         calibration.write('calibration.json')
