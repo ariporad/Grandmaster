@@ -4,7 +4,7 @@ import chess
 from prompt_toolkit.completion import Completer, NestedCompleter
 from game_controller import GameController
 from arduino_manager import Button
-from helpers import print_to_dashboard as print
+from helpers import print_to_dashboard as print, show_image
 
 class DashboardDelegate:
 	"""
@@ -28,6 +28,7 @@ class DashboardDelegate:
 			'move': chess.SQUARE_NAMES,
 			'magnet': {'on', 'off'},
 			'bled': {(b.name): {'on', 'off'} for b in Button},
+			'camshow': None,
 			'exit': None
 		})
 
@@ -47,6 +48,23 @@ class DashboardDelegate:
 			button = Button[args[0].upper()]
 			print('Turning button light', button.name, 'ON' if enabled else 'OFF')
 			self.game.arduino.set_button_light(button, enabled)
+		elif cmd == 'camshow':
+			print("Fetching image...")
+			try:
+				img = self.game.get_image(retry=0)
+			except Exception as err:
+				print("Failed to load image:", err)
+				return
+			print("Recognizing board...")
+			try:
+				positions = self.game.detector.detect_piece_positions(img, on_annotate=show_image)
+				board = self.game.detector.generate_board(positions)
+			except Exception as err:
+				show_image(img)
+				print("Failed to detect piece positions:", err)
+				return
+			print("Board:")
+			print(board)
 		elif cmd == 'exit':
 			exit(0)
 		else:

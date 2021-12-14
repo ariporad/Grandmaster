@@ -1,5 +1,4 @@
 import asyncio
-import chess
 from prompt_toolkit import Application
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.completion import NestedCompleter

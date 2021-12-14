@@ -76,8 +76,7 @@ class GameController:
 	
 	def get_image(self, retry=5):
 		try:
-			r = requests.get('http://192.168.34.100:5555/camera.png', stream=True).raw
-			# r = requests.get('http://grandmaster.local:5555/camera.png')
+			r = requests.get('http://grandmaster.local:5555/camera.png', stream=True).raw
 			return cv2.imdecode(np.asarray(bytearray(r.read()), dtype='uint8'), cv2.IMREAD_COLOR)
 		except Exception as err:
 			if retry > 0:

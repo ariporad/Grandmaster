@@ -9,6 +9,4 @@ print("Connecting...")
 
 configure_dashboard(DashboardDelegate(GameController()))
 
-print("Ready")
-
 asyncio.run(get_dashboard().main())

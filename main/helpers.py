@@ -1,6 +1,15 @@
+import cv2
 from typing import *
 from math import inf, sqrt
 from dashboard import get_dashboard
+from prompt_toolkit.application import run_in_terminal
+
+has_imgcat = False
+try:
+	from imgcat import imgcat
+	has_imgcat = True
+except ImportError:
+	pass
 
 def distance(a: Tuple, b: Tuple):
     assert len(a) == len(b)
@@ -16,3 +25,15 @@ def print_to_dashboard(*args):
         print(*args)
     else:
         dashboard.print(*args)
+
+def show_image(img):
+    if not has_imgcat:
+        cv2.imshow(img)
+        cv2.waitKey(0)
+    else:
+        def _show_image():
+            imgcat(img)
+            input("Press ENTER to continue... ")
+        run_in_terminal(_show_image)
+        
+    

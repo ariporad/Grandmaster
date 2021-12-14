@@ -153,14 +153,18 @@ class Detector:
 
         return board
 
-    def detect_piece_positions(self, img, show=False):
+    def detect_piece_positions(self, img, show=False, on_annotate=None):
+        if show:
+            on_annotate = lambda img: cv2.imshow("Squares", img)
+
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
         tags = detect_apriltags(self.corner_apriltag_family, gray)
         squares = self.calculate_board_dimensions(tags)
         board_center = np.mean([squares['d4'], squares['d5'], squares['e4'], squares['e5']], axis=0)
 
-        if show:
+        if on_annotate is not None:
             # Very kludge-y code to mark the apriltags
+            # Extra cludge: we don't want on_annotate to affect the return value, so it's a callback
             bottom_right_I0 = tags[self.CORNER_I0_TAG_ID].center
             bottom_left_a0 = tags[self.CORNER_a0_TAG_ID].center
             top_left_a9 = tags[self.CORNER_a9_TAG_ID].center
@@ -177,7 +181,7 @@ class Detector:
                     color = [255, 0, 255]
                 img[y-10:y+11, x-10:x+11, :] = color
 
-            for tag in sorted((tag for tag_id, tag in tags.items() if tag_id >= 128), key=lambda tag: tag.tag_id):
+            for tag in sorted((tag for tag_id, tag in tags.items() if tag_id >= 100), key=lambda tag: tag.tag_id):
                 x = round(tag.center[0])
                 y = round(tag.center[1])
                 img[y-10:y+11, x-10:x+11, :] = [0, 255, 0]
@@ -187,12 +191,9 @@ class Detector:
                 y = round(pos[1])
                 img[y-10:y+11, x-10:x+11, :] = [255, 0, 0]
             
-            cv2.imshow("Squares", img)
-            # cv2.waitKey(0)
-
+            on_annotate(img)
 
         for tag in sorted((tag for tag_id, tag in tags.items() if tag_id >= 100), key=lambda tag: distance(board_center, tag.center), reverse=True):
-            print("FOUND TAG:", tag.tag_id)
             # HACK: closest_item isn't working, so do this which is bad but works
             def _key(item):
                 _, pos = item
@@ -201,6 +202,7 @@ class Detector:
             square = sorted(squares.items(), key=_key)[0][0] #closest_item(squares, tag.center, distance=distance)
             del squares[square]
             yield square, tag.tag_id
+
     
 
 if __name__ == '__main__':
