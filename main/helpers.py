@@ -1,4 +1,5 @@
 import cv2
+import threading
 from typing import *
 from math import inf, sqrt
 from dashboard import get_dashboard
@@ -28,6 +29,9 @@ def print_to_dashboard(*args):
 
 def show_image(img):
     if not has_imgcat:
+        if threading.current_thread() is not threading.main_thread():
+            print("ERROR: Can't use OpenCV from non-main thread. Skipping image...")
+            return
         cv2.imshow(img)
         cv2.waitKey(0)
     else:

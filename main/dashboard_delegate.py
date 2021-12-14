@@ -25,10 +25,9 @@ class DashboardDelegate:
 			("Magnet:", 'ON' if self.game.arduino.electromagnet_enabled else 'OFF'),
 		])
 
-	def make_completer(self) -> Completer:
-		return {}
+	def make_completer(self) -> dict:
 		return { 
-			'move': chess.SQUARE_NAMES,
+			'move': set(chess.SQUARE_NAMES),
 			'magnet': {'on', 'off'},
 			'bled': {(b.name): {'on', 'off'} for b in Button},
 			'camshow': None,
@@ -75,26 +74,31 @@ class DashboardDelegate:
 
 
 class DashboardDelegateThread(Thread):
-	is_ready: Lock
-	status_line: str
+	wait_for_ready: Lock
+	status_line: str = 'Loading...'
+	status_line_stale: bool = True
 	completion_dict: dict
 	commands: deque
 
 	def __init__(self):
 		super().__init__()
 		self.commands = deque()
-		self.is_ready = Lock()
+		self.wait_for_ready = Lock()
+
+	def get_status_line(self):
+		self.status_line_stale = True
+		return self.status_line
 
 	def run(self):
-		print("Hi!")
-		with self.is_ready:
+		with self.wait_for_ready:
 			delegate = DashboardDelegate(GameController())
 			self.completion_dict = delegate.make_completer()
 			delegate.game.arduino.update()
 			delegate.game.start_human_turn()
-		print("Ready")
 		while True:
+			# HACK: limit status line updates by only generating one if needed
+			if self.status_line_stale:
+				self.status_line = delegate.make_statusline()
 			delegate.game.arduino.update()
-			# self.status_line = delegate.make_statusline()
 			while len(self.commands) > 0:
 				delegate.execute_command(self.commands.popleft())

@@ -95,8 +95,7 @@ class Dashboard:
 			children=[
 				Window(FormattedTextControl("Grandmaster OK")),
 				Window(
-					# FormattedTextControl(text=(lambda: self.delegate_thread.status_line), show_cursor=False, focusable=False),
-					FormattedTextControl("TEST", show_cursor=False, focusable=False),
+					FormattedTextControl(text=(lambda: self.delegate_thread.get_status_line()), show_cursor=False, focusable=False),
 					dont_extend_height=True,
 					dont_extend_width=True
 				)
