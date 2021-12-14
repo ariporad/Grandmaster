@@ -1,4 +1,5 @@
 from typing import *
+from helpers import print_to_dashboard as print
 from enum import Enum, IntEnum
 import cv2
 import chess

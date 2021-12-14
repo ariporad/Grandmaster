@@ -1,4 +1,5 @@
 import cv2
+from helpers import print_to_dashboard as print
 from os.path import dirname, join
 from calibrate import CameraCalibration
 

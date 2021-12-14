@@ -1,4 +1,6 @@
+import asyncio
 from typing import *
+from helpers import print_to_dashboard as print
 
 import cv2
 import chess
@@ -49,7 +51,6 @@ class GameController:
 		print("Got Board:")
 		print(board)
 		move: chess.Move = self.pick_move(board)
-		# move = chess.Move.from_uci("a1b2")
 		print("Making Move:", move)
 
 		self.arduino.set_electromagnet(False)
@@ -86,9 +87,10 @@ class GameController:
 			else:
 				raise
 
-	def main(self):
-		self.arduino.tick()
+	async def main(self):
+		self.arduino.update()
 		print("Grandmaster Ready")
 		self.start_human_turn()
 		while True:
-			self.arduino.tick()
+			self.arduino.update()
+			await asyncio.sleep(0.1)

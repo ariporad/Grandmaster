@@ -1,4 +1,6 @@
+
 from typing import *
+from helpers import print_to_dashboard as print
 import serial
 from time import sleep
 from enum import Enum, IntEnum, unique
@@ -17,10 +19,10 @@ class Arduino:
 
 	def __init__(self, device: Device, baudrate=115200):
 		found_arduino = False
-		for device in serial.tools.list_ports.comports():
-			if device.serial_number is not None and device.serial_number.upper() == device.upper():
+		for d in serial.tools.list_ports.comports():
+			if d.serial_number is not None and d.serial_number.upper() == device.value.upper():
 				found_arduino = True
-				self.serial = serial.Serial(device.device, baudrate=baudrate, timeout=0, exclusive=False)
+				self.serial = serial.Serial(d.device, baudrate=baudrate, timeout=0, exclusive=False)
 		
 		if not found_arduino:
 			raise IOError(f"Couldn't find Arduino! (Name: {device})")
@@ -28,7 +30,7 @@ class Arduino:
 		sleep(2)
 
 	def write(self, data: int):
-		self.gantry.write(str(data).encode('utf-8'))
+		self.serial.write(str(data).encode('utf-8'))
 		self.serial.flush()
 		self.serial.flushInput()
 		self.serial.flushOutput()
@@ -97,7 +99,9 @@ class ArduinoManager:
 				change = pressed != self.buttons[button]
 				self.buttons[button] = pressed
 				if change:
-					self.handlers[button]()
+					print("Pressed/Unpressed:", button)
+					if button in self.handlers:
+						self.handlers[button]()
 			self.electromagnet_enabled = bool(message & (1 << 4))
 
 		for message in self.gantry.read():
