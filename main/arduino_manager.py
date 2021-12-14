@@ -38,9 +38,16 @@ class Arduino:
 	def read(self):
 		return [int(x) for x in self.serial.read() if int(x) != 0]
 
-class LightMode(IntEnum):
-	OFF = 0
-	DEFAULT = 1
+# Keep in sync with board.ino:led_set_pallete
+class LEDPallete(IntEnum):
+	FAIL = 0
+	BOOTUP = 1
+	GETTING_READY = 2
+	READY = 3
+	HUMAN_TURN = 4
+	EXPO_HUMAN_THINK = 5
+	COMPUTER_MOVE = 6
+	COMPUTER_THINK = 7
 
 class Button(IntEnum):
 	COMPUTER = 2
@@ -83,8 +90,8 @@ class ArduinoManager:
 			while self.electromagnet_enabled != enabled:
 				self.update()
 
-	def set_light_mode(self, mode: LightMode):
-		print("Light Modes Not Implemented, set to:", mode)
+	def set_led_pallete(self, pallete: LEDPallete):
+		self.board.write((int(pallete) << 2) | 0b11)
 
 	def set_button_light(self, button: Button, enabled: bool, others: Optional[bool]=None):
 		self.board.write((int(enabled) << 4) | (button << 2) | 0b01)

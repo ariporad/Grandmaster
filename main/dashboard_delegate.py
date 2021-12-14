@@ -5,7 +5,7 @@ import chess
 from threading import Thread, Lock
 from prompt_toolkit.completion import Completer, NestedCompleter
 from game_controller import GameController
-from arduino_manager import Button
+from arduino_manager import Button, LEDPallete
 from helpers import print_to_dashboard as print, show_image
 
 class DashboardDelegate:
@@ -50,6 +50,10 @@ class DashboardDelegate:
 			button = Button[args[0].upper()]
 			print('Turning button light', button.name, 'ON' if enabled else 'OFF')
 			self.game.arduino.set_button_light(button, enabled)
+		elif cmd == 'leds':
+			pallete = LEDPallete[args[0].upper()]
+			print('Setting LEDs to Pallete:', pallete.name)
+			self.game.arduino.set_led_pallete(pallete)
 		elif cmd == 'camshow':
 			print("Fetching image...")
 			try:

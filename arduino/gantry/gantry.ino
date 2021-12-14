@@ -78,7 +78,7 @@ void loop()
   }
 
   loops_since_update++;
-  if (loops_since_update >= LOOPS_PER_UPDATE) {
+  if (loops_since_update >= UPDATE_INTERVAL_MS) {
     loops_since_update = 0;
     send_position();
   }

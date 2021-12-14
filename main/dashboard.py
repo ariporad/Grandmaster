@@ -50,7 +50,7 @@ class Dashboard:
 			prompt='→ ',
 			style='bg:ansiwhite ansiblack',
 			accept_handler=self.on_input,
-			completer=NestedCompleter.from_nested_dict(self.delegate_thread.completion_dict),
+			# completer=NestedCompleter.from_nested_dict(self.delegate_thread.completion_dict),
 			complete_while_typing=True,
 		)
 		self.app = Application(
