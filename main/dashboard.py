@@ -1,7 +1,6 @@
 import asyncio
 import chess
 from prompt_toolkit import Application
-from prompt_toolkit import completion
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.completion import NestedCompleter
 from prompt_toolkit.completion.base import Completer
@@ -25,9 +24,9 @@ Welcome to
 
 dashboard = None
 
-def configure_dashboard(game: 'GameController'):
+def configure_dashboard(delegate: 'DashboardDelegate'):
 	global dashboard
-	dashboard = Dashboard(game)
+	dashboard = Dashboard(delegate)
 	
 def get_dashboard():
 	return dashboard
@@ -38,27 +37,27 @@ class Dashboard:
 	app: Application
 	text: str = 'Connected!\n'
 	
-	game: 'GameController'
+	delegate: 'DashboardDelegate'
 
-	def __init__(self, game: 'GameController') -> None:
+	def __init__(self, delegate: 'DashboardDelegate') -> None:
 		"""
 		DO NOT INSTANTIATE DIRECTLY! SINGLETON! USE configure_dashboard!
 		"""
+		self.delegate = delegate
 		self.content_view = FormattedTextControl()
 		self.text_area = TextArea(
 			multiline=False,
 			prompt='→ ',
 			style='bg:ansiwhite ansiblack',
 			accept_handler=self.on_input,
-			completer=self.completer,
+			completer=self.delegate.make_completer(),
 			complete_while_typing=True,
 		)
-		self.game = game
 		self.app = Application(
 			layout=self.layout,
 			key_bindings=self.key_bindings,
 			full_screen=True,
-			erase_when_done=False,
+			erase_when_done=True,
 			refresh_interval=0.1,
 		)
 
@@ -67,18 +66,7 @@ class Dashboard:
 		self.content_view.text = FormattedText([('', self.text), ('[SetCursorPosition]', '')])
 
 	def on_input(self, text: Buffer):
-		text = text.text.strip()
-		# TODO: parse input
-	
-	@property
-	def completer(self) -> Completer:
-		return NestedCompleter({
-			'move': chess.SQUARE_NAMES,
-			'setpos': None,
-			'magnet': {'on', 'off'},
-			'bled': {'player', 'computer', 'start', 'fun'},
-			'exit': None
-		})
+		self.delegate.execute_command(text.text)
 
 	@property
 	def key_bindings(self) -> KeyBindings:
@@ -107,10 +95,7 @@ class Dashboard:
 			children=[
 				Window(FormattedTextControl("Grandmaster OK")),
 				Window(
-					FormattedTextControl(
-						show_cursor=False, focusable=False,
-						text=f"State: {self.game.state.name}. Gantry at {self.game.arduino.gantry_pos}. Magnet {'ON' if self.game.arduino.electromagnet_enabled else 'OFF'}.",
-					),
+					FormattedTextControl(text=(lambda: self.delegate.make_statusline()), show_cursor=False, focusable=False),
 					dont_extend_height=True,
 					dont_extend_width=True
 				)
@@ -131,7 +116,7 @@ class Dashboard:
 
 	async def main(self):
 		app_task = asyncio.create_task(self.app.run_async())
-		game_task = asyncio.create_task(self.game.main())
+		game_task = asyncio.create_task(self.delegate.main())
 
 		await game_task
 		await app_task
