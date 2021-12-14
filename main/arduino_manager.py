@@ -30,12 +30,14 @@ class Arduino:
 		sleep(2)
 
 	def write(self, data: int):
-		self.serial.write(str(data).encode('utf-8'))
+		self.serial.write((str(data) + '\n').encode('utf-8'))
 		self.serial.flush()
 		self.serial.flushInput()
 		self.serial.flushOutput()
+		sleep(0)
 
 	def read(self):
+		sleep(0)
 		return [int(x) for x in self.serial.read() if int(x) != 0]
 
 # Keep in sync with board.ino:led_set_pallete
@@ -91,7 +93,8 @@ class ArduinoManager:
 				self.update()
 
 	def set_led_pallete(self, pallete: LEDPallete):
-		self.board.write((int(pallete) << 2) | 0b11)
+		cmd = (int(pallete) << 2) | 0b11
+		self.board.write(cmd)
 
 	def set_button_light(self, button: Button, enabled: bool, others: Optional[bool]=None):
 		self.board.write((int(enabled) << 4) | (button << 2) | 0b01)
