@@ -1,6 +1,8 @@
+from collections import deque
 from typing import *
 from sys import exit
 import chess
+from threading import Thread, Lock
 from prompt_toolkit.completion import Completer, NestedCompleter
 from game_controller import GameController
 from arduino_manager import Button
@@ -24,13 +26,14 @@ class DashboardDelegate:
 		])
 
 	def make_completer(self) -> Completer:
-		return NestedCompleter(ignore_case=True, options={
+		return {}
+		return { 
 			'move': chess.SQUARE_NAMES,
 			'magnet': {'on', 'off'},
 			'bled': {(b.name): {'on', 'off'} for b in Button},
 			'camshow': None,
 			'exit': None
-		})
+		}
 
 	def execute_command(self, command: str):
 		cmd, *args = command.strip().lower().split(' ')
@@ -71,5 +74,27 @@ class DashboardDelegate:
 			print(f"Unknown Command: '{command}'")
 
 
-	def main(self):
-		return self.game.main()
+class DashboardDelegateThread(Thread):
+	is_ready: Lock
+	status_line: str
+	completion_dict: dict
+	commands: deque
+
+	def __init__(self):
+		super().__init__()
+		self.commands = deque()
+		self.is_ready = Lock()
+
+	def run(self):
+		print("Hi!")
+		with self.is_ready:
+			delegate = DashboardDelegate(GameController())
+			self.completion_dict = delegate.make_completer()
+			delegate.game.arduino.update()
+			delegate.game.start_human_turn()
+		print("Ready")
+		while True:
+			delegate.game.arduino.update()
+			# self.status_line = delegate.make_statusline()
+			while len(self.commands) > 0:
+				delegate.execute_command(self.commands.popleft())

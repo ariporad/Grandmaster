@@ -1,4 +1,5 @@
 import asyncio
+from cv2 import waitKey
 from prompt_toolkit import Application
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.completion import NestedCompleter
@@ -23,9 +24,9 @@ Welcome to
 
 dashboard = None
 
-def configure_dashboard(delegate: 'DashboardDelegate'):
+def configure_dashboard(delegate_thread: 'DashboardDelegateThread'):
 	global dashboard
-	dashboard = Dashboard(delegate)
+	dashboard = Dashboard(delegate_thread)
 	
 def get_dashboard():
 	return dashboard
@@ -36,20 +37,20 @@ class Dashboard:
 	app: Application
 	text: str = 'Connected!\n'
 	
-	delegate: 'DashboardDelegate'
+	delegate_thread: 'DashboardDelegateThread'
 
-	def __init__(self, delegate: 'DashboardDelegate') -> None:
+	def __init__(self, delegate_thread: 'DashboardDelegateThread') -> None:
 		"""
 		DO NOT INSTANTIATE DIRECTLY! SINGLETON! USE configure_dashboard!
 		"""
-		self.delegate = delegate
+		self.delegate_thread = delegate_thread
 		self.content_view = FormattedTextControl()
 		self.text_area = TextArea(
 			multiline=False,
 			prompt='→ ',
 			style='bg:ansiwhite ansiblack',
 			accept_handler=self.on_input,
-			completer=self.delegate.make_completer(),
+			completer=NestedCompleter.from_nested_dict(self.delegate_thread.completion_dict),
 			complete_while_typing=True,
 		)
 		self.app = Application(
@@ -65,7 +66,7 @@ class Dashboard:
 		self.content_view.text = FormattedText([('', self.text), ('[SetCursorPosition]', '')])
 
 	def on_input(self, text: Buffer):
-		self.delegate.execute_command(text.text)
+		self.delegate_thread.commands.append(text.text)
 
 	@property
 	def key_bindings(self) -> KeyBindings:
@@ -94,7 +95,8 @@ class Dashboard:
 			children=[
 				Window(FormattedTextControl("Grandmaster OK")),
 				Window(
-					FormattedTextControl(text=(lambda: self.delegate.make_statusline()), show_cursor=False, focusable=False),
+					# FormattedTextControl(text=(lambda: self.delegate_thread.status_line), show_cursor=False, focusable=False),
+					FormattedTextControl("TEST", show_cursor=False, focusable=False),
 					dont_extend_height=True,
 					dont_extend_width=True
 				)
@@ -112,10 +114,3 @@ class Dashboard:
 		    ]),
 			focused_element=self.text_area
 		)
-
-	async def main(self):
-		app_task = asyncio.create_task(self.app.run_async())
-		game_task = asyncio.create_task(self.delegate.main())
-
-		await game_task
-		await app_task

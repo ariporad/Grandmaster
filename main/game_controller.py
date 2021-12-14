@@ -1,4 +1,3 @@
-import asyncio
 from typing import *
 from helpers import print_to_dashboard as print
 
@@ -43,7 +42,7 @@ class GameController:
 		img = self.get_image()
 		print("Got image!")
 
-		cv2.imshow("Fetched image", img)
+		# cv2.imshow("Fetched image", img)
 		# cv2.waitKey(0)
 		# cv2.destroyAllWindows()
 
@@ -86,10 +85,9 @@ class GameController:
 			else:
 				raise
 
-	async def main(self):
+	def main(self):
 		self.arduino.update()
 		print("Grandmaster Ready")
 		self.start_human_turn()
 		while True:
 			self.arduino.update()
-			await asyncio.sleep(0.1)
