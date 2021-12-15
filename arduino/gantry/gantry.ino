@@ -1,5 +1,5 @@
 #include <Wire.h>
-#include <SpeedyStepper.h>
+#include "SpeedyStepper.h"
 
 //
 // Constants
@@ -12,11 +12,16 @@
 #define X_DIR_PIN 6
 #define Y_DIR_PIN 5
 #define STEPPERS_ENABLE_PIN 8
-#define LIMIT_SWITCH_X_PIN 10
-#define LIMIT_SWITCH_Y_PIN 9
+#define LIMIT_SWITCH_X_MIN_PIN 11
+#define LIMIT_SWITCH_X_MAX_PIN 9
+#define LIMIT_SWITCH_Y_MAX_PIN 10
 
-#define STEPS_PER_SQUARE -260
+#define HOME_OFFSET_X 300
+#define HOME_OFFSET_Y 130
 
+int steps_per_square = -255;
+
+#define HOMING_SPEED_STEPS_PER_SEC 100
 #define SPEED_STEPS_PER_SEC 200
 #define ACCEL_STEPS_PER_SEC_PER_SEC 100
 
@@ -25,8 +30,8 @@
 //
 // State Variables
 //
-int current_pos_x = 0; // 0-9, where 0 is A, 7 is H, and 8-9 are the graveyard
-int current_pos_y = 0; // 0-7, where 0 is Rank 1 and 7 is Rank 7
+int current_pos_x = 7; // 0-9, where 0 is A, 7 is H, and 8-9 are the graveyard
+int current_pos_y = 7; // 0-7, where 0 is Rank 1 and 7 is Rank 7
 
 //
 // Motors
@@ -46,6 +51,13 @@ void setup()
 	xMotor.connectToPins(X_STEP_PIN, X_DIR_PIN);
 	yMotor.connectToPins(Y_STEP_PIN, Y_DIR_PIN);
 	digitalWrite(STEPPERS_ENABLE_PIN, LOW);
+
+	pinMode(LIMIT_SWITCH_X_MIN_PIN, INPUT_PULLUP);
+	pinMode(LIMIT_SWITCH_X_MAX_PIN, INPUT_PULLUP);
+	pinMode(LIMIT_SWITCH_Y_MAX_PIN, INPUT_PULLUP);
+
+	home();
+	send_position();
 }
 
 void loop()
@@ -72,8 +84,8 @@ void loop()
 			int diff_pos_x = new_pos_x - current_pos_x;
 			int diff_pos_y = new_pos_y - current_pos_y;
 
-			int steps_x = diff_pos_x * STEPS_PER_SQUARE;
-			int steps_y = diff_pos_y * STEPS_PER_SQUARE;
+			int steps_x = diff_pos_x * steps_per_square;
+			int steps_y = diff_pos_y * steps_per_square;
 
 			moveXYWithCoordination(steps_x, steps_y, SPEED_STEPS_PER_SEC, ACCEL_STEPS_PER_SEC_PER_SEC);
 
@@ -108,14 +120,21 @@ void send_position()
 	Serial.write(((current_pos_x + 1) << 4) | (current_pos_y + 1));
 }
 
+void home() {
+	xMotor.moveToHomeInSteps(1, HOMING_SPEED_STEPS_PER_SEC, steps_per_square * 11, LIMIT_SWITCH_X_MAX_PIN);
+	yMotor.moveToHomeInSteps(1, HOMING_SPEED_STEPS_PER_SEC, steps_per_square * 11, LIMIT_SWITCH_Y_MAX_PIN);
+	moveXYWithCoordination(HOME_OFFSET_X, HOME_OFFSET_Y, HOMING_SPEED_STEPS_PER_SEC, ACCEL_STEPS_PER_SEC_PER_SEC);
+}
+
 /*
  * move both X & Y motors together in a coordinated way, such that they each
  * start and stop at the same time, even if one motor moves a greater distance
  *
- * Copied from Stan's example (thank you!)
+ * Copied and modified from Stan's example (thank you!)
  */
 void moveXYWithCoordination(long stepsX, long stepsY, float speedInStepsPerSecond, float accelerationInStepsPerSecondPerSecond)
 {
+
 	float speedInStepsPerSecond_X;
 	float accelerationInStepsPerSecondPerSecond_X;
 	float speedInStepsPerSecond_Y;
