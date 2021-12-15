@@ -54,6 +54,8 @@ class DashboardDelegate:
 			pallete = LEDPallete[args[0].upper()]
 			print('Setting LEDs to Pallete:', pallete.name)
 			self.game.arduino.set_led_pallete(pallete)
+		elif cmd == 'autoplay':
+			self.game.set_autoplay(args[0] == 'on')
 		elif cmd == 'camshow':
 			print("Fetching image...")
 			try:

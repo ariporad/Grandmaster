@@ -93,8 +93,7 @@ class ArduinoManager:
 				self.update()
 
 	def set_led_pallete(self, pallete: LEDPallete):
-		cmd = (int(pallete) << 2) | 0b11
-		self.board.write(cmd)
+		self.board.write((int(pallete) << 2) | 0b11)
 
 	def set_button_light(self, button: Button, enabled: bool, others: Optional[bool]=None):
 		self.board.write((int(enabled) << 4) | (button << 2) | 0b01)

@@ -8,7 +8,7 @@ import numpy as np
 import serial
 import serial.tools.list_ports
 from time import sleep
-from enum import IntEnum
+from enum import IntEnum, auto
 from camera import Camera
 from random import choice
 from detector import Detector
@@ -26,20 +26,34 @@ class GameController:
 	state: State = State.HUMAN_TURN
 	gantry: serial.Serial
 
+	autoplay: bool = False
+
 	def __init__(self):
 		self.camera = Camera()
 		self.detector = Detector()
 		self.arduino = ArduinoManager()
 		self.arduino.on_button_press(Button.PLAYER, self.play_computer_turn)
 		self.arduino.on_button_press(Button.COMPUTER, self.play_computer_turn)
+		self.arduino.on_button_press(Button.FUN, lambda: self.set_autoplay(True))
+		self.arduino.on_button_press(Button.START, lambda: self.set_autoplay(False))
 
-	def play_computer_turn(self):
+	def set_autoplay(self, autoplay: bool):
+		print("Setting autoplay:", autoplay)
+		self.autoplay = autoplay
+		if autoplay:
+			self.state = State.HUMAN_TURN
+			self.play_computer_turn()
+
+	def play_computer_turn(self, is_autoplaying_human=False):
 		if self.state != State.HUMAN_TURN: return
 		
 		print("My turn!")
-		self.state = State.COMPUTER_TURN
-		self.arduino.set_button_light(Button.COMPUTER, True, others=False)
-		self.arduino.set_led_pallete(LEDPallete.COMPUTER_THINK)
+		if not is_autoplaying_human:
+			self.state = State.COMPUTER_TURN
+			self.arduino.set_button_light(Button.COMPUTER, True, others=False)
+			self.arduino.set_led_pallete(LEDPallete.COMPUTER_THINK)
+		else:
+			self.arduino.set_led_pallete(LEDPallete.EXPO_HUMAN_THINK)
 
 		try:
 			print("Fetching image...")
@@ -48,11 +62,13 @@ class GameController:
 
 			board = self.detector.detect_board(img, show=False)
 			print("Got Board:")
-			print(board)
+			print(board.transform(chess.flip_horizontal).transform(chess.flip_vertical))
+			if is_autoplaying_human:
+				board.turn = chess.WHITE
 			move: chess.Move = self.pick_move(board)
-			print("Making Move:", move)
+			print("Making Move:", board.piece_at(move.from_square), '@', move)
 
-			self.arduino.set_led_pallete(LEDPallete.COMPUTER_MOVE)
+			self.arduino.set_led_pallete(LEDPallete.COMPUTER_MOVE if not is_autoplaying_human else LEDPallete.HUMAN_TURN)
 			self.arduino.set_electromagnet(False)
 			self.move_to_square(move.from_square)
 			self.arduino.set_electromagnet(True)
@@ -61,12 +77,13 @@ class GameController:
 
 			print("DONE! It's the human's turn now!")
 			self.start_human_turn()
-		except:
+		except Exception as err:
 			print("Failed to execute computer turn! Retrying in 3 seconds...!")
+			print(err)
 			self.arduino.set_led_pallete(LEDPallete.FAIL)
 			sleep(3)
 			self.state = State.HUMAN_TURN
-			self.play_computer_turn()
+			self.play_computer_turn(is_autoplaying_human)
 	
 	def pick_move(self, board: chess.Board):
 		return choice([
@@ -76,8 +93,11 @@ class GameController:
 
 	def start_human_turn(self):
 		self.state = State.HUMAN_TURN
-		self.arduino.set_button_light(Button.PLAYER, True, others=False)
-		self.arduino.set_led_pallete(LEDPallete.HUMAN_TURN)
+		if not self.autoplay:
+			self.arduino.set_button_light(Button.PLAYER, True, others=False)
+			self.arduino.set_led_pallete(LEDPallete.HUMAN_TURN)
+		else:
+			self.play_computer_turn(True)
 
 	def move_to_square(self, square: chess.Square, block=True):
 		x = chess.square_file(square)
@@ -95,7 +115,7 @@ class GameController:
 				return self.get_image(retry - 1)
 			else:
 				raise
-
+	
 	def main(self):
 		self.arduino.update()
 		print("Grandmaster Ready")
