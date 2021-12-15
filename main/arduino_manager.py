@@ -179,10 +179,10 @@ class ArduinoManager:
 		be set to that value.
 		"""
 		self._assert_ready()
-		self.board.write((int(enabled) << 4) | (button << 2) | 0b01)
 		if others is not None:
-			for button in (b for b in Button if b != button):
+			for button in Button:
 				self.set_button_light(button, others, others=None)
+		self.board.write((int(enabled) << 4) | (button << 2) | 0b01)
 
 	def update(self):
 		"""

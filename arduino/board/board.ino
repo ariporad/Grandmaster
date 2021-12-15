@@ -21,6 +21,11 @@
 
 void setup()
 {
+	// Do this as soon as possible since the gantry is going to start moving and we don't want to
+	// drag a piece with it.
+	pinMode(MAGNET_PIN, OUTPUT);
+    digitalWrite(MAGNET_PIN, LOW);
+	
 	// Setup the Serial interface
 	Serial.begin(115200);
 	Serial.setTimeout(50); // Make sure we don't spend too much time waiting for serial input
@@ -32,9 +37,6 @@ void setup()
 		digitalWrite(BUTTON_LED_START + i, LOW);
 	}
 
-	pinMode(MAGNET_PIN, OUTPUT);
-    digitalWrite(MAGNET_PIN, LOW);
-	
 	led_setup();
 
 	send_status();
@@ -44,6 +46,9 @@ void loop()
 {
 	// Check for Serial communication
 	if (Serial.available()) read_command();
+
+	// If we're disconnected from the computer, turn off the LEDs
+	if (!Serial) led_set_pallete_off();
 
 	check_buttons();
 	led_update();
@@ -141,7 +146,6 @@ void cmd_magnet(uint16_t data) {
 			digitalWrite(MAGNET_PIN, HIGH);
 			break;
 		default:
-			send_invalid_command();
 			return;
 	}
 }
@@ -289,13 +293,13 @@ void led_set_pallete_fail() // ID: 0
 void led_set_pallete_bootup() // ID: 1
 {
 	led_set_animation_spin();
-	led_palette = RainbowStripeColors_p;
+	led_palette = RainbowColors_p;
 }
 
 void led_set_pallete_getting_ready() // ID: 2
 {
-	led_set_animation_blink_and_spin();
-	led_palette = RainbowColors_p;
+	led_set_animation_spin();
+	led_palette = RainbowStripeColors_p;
 }
 
 void led_set_pallete_ready() // ID: 3
@@ -342,6 +346,12 @@ void led_set_pallete_computer_think() // ID: 7
 {
 	led_set_animation_blink();
 	fill_solid(led_palette, 16, LED_COMPUTER_COLOR);
+}
+
+void led_set_pallete_off() // this isn't accessible over serial, used when serial is disconnected
+{
+	led_set_animation(0, 0, 0);
+	fill_solid(led_palette, 16, CRGB::Black);
 }
 
 const TProgmemPalette16 led_palette_both_players PROGMEM =

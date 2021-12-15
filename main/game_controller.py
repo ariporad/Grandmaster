@@ -1,10 +1,12 @@
 from typing import *
 from helpers import print_to_dashboard as print
 
+import sys
 import cv2
 import chess
 import requests
 import numpy as np
+import traceback
 from time import sleep
 from enum import Enum
 from random import choice
@@ -115,13 +117,16 @@ class GameController:
 
 			move: chess.Move = self.pick_move(board)
 
-			print("Making Move:", board.piece_at(move.from_square), '@', move)
-			self.arduino.set_led_pallete(LEDPallete.COMPUTER_MOVE if not is_autoplaying_human else LEDPallete.HUMAN_TURN)
-			self.arduino.set_electromagnet(False)
-			self.move_to_square(move.from_square)
-			self.arduino.set_electromagnet(True)
-			self.move_to_square(move.to_square)
-			self.arduino.set_electromagnet(False)
+			if move == None:
+				print("Couldn't find valid move!")
+			else:
+				print("Making Move:", board.piece_at(move.from_square), '@', move)
+				self.arduino.set_led_pallete(LEDPallete.COMPUTER_MOVE if not is_autoplaying_human else LEDPallete.HUMAN_TURN)
+				self.arduino.set_electromagnet(False)
+				self.move_to_square(move.from_square)
+				self.arduino.set_electromagnet(True)
+				self.move_to_square(move.to_square)
+				self.arduino.set_electromagnet(False)
 			print("DONE with my turn!")
 			if not is_autoplaying_human:
 				self.start_human_turn()
@@ -129,7 +134,7 @@ class GameController:
 				self.play_computer_turn(False)
 		except Exception as err:
 			print("Failed to execute move! Retrying in 3 seconds...!")
-			print(err)
+			traceback.print_exception(*sys.exc_info())
 			# If we just don't acknowledge the failure it's like it never happened! #HashtagLifeHax
 			# self.arduino.set_led_pallete(LEDPallete.FAIL)
 			sleep(3)
@@ -146,10 +151,15 @@ class GameController:
 		
 		This is an area with significant possible future improvement.
 		"""
-		return choice([
-			move for move in board.legal_moves 
+		moves = [
+			move for move in board.pseudo_legal_moves 
 			if board.piece_at(move.from_square).piece_type != chess.KNIGHT \
-				and board.piece_at(move.to_square) is None])
+				and board.piece_at(move.to_square) is None
+		]
+		if len(moves) == 0:
+			return 
+		return choice(moves)
+
 
 	def move_to_square(self, square: chess.Square, block=True):
 		"""
