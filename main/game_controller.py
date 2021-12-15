@@ -101,7 +101,7 @@ class GameController:
 			self.arduino.set_led_pallete(LEDPallete.COMPUTER_THINK)
 		else:
 			self.arduino.set_button_light(Button.PLAYER, True, others=False)
-			self.arduino.set_led_pallete(LEDPallete.EXPO_HUMAN_THINK)
+			self.arduino.set_led_pallete(LEDPallete.AUTOPLAY_HUMAN_THINK)
 
 		try:
 			print("Fetching image...")

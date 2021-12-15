@@ -38,7 +38,7 @@ void setup()
 	// led_set_pallete_getting_ready();
 	// led_set_pallete_ready();
 	// led_set_pallete_human_turn();
-	// led_set_pallete_expo_human_think();
+	// led_set_pallete_autoplay_human_think();
 }
 
 uint8_t led_position = 0;
@@ -105,7 +105,7 @@ void led_set_pallete(uint8_t id) {
 	case 2: return led_set_pallete_getting_ready();
 	case 3: return led_set_pallete_ready();
 	case 4: return led_set_pallete_human_turn();
-	case 5: return led_set_pallete_expo_human_think();
+	case 5: return led_set_pallete_autoplay_human_think();
 	case 6: return led_set_pallete_computer_move();
 	case 7: return led_set_pallete_computer_think();
 	default:
@@ -151,7 +151,7 @@ void led_set_pallete_human_turn() // ID: 4
 	led_palette[13] = CRGB::Black;
 }
 
-void led_set_pallete_expo_human_think() // ID: 5
+void led_set_pallete_autoplay_human_think() // ID: 5
 {
 	led_set_animation_blink();
 	fill_solid(led_palette, 16, LED_HUMAN_COLOR);
