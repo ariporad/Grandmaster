@@ -10,7 +10,7 @@ print(GRANDMASTER_ASCII_ART)
 
 print("Connecting...")
 
-def main():
+async def main():
 	thread = DashboardDelegateThread()
 	thread.start()
 
@@ -21,4 +21,6 @@ def main():
 
 	configure_dashboard(thread)
 
-	get_dashboard.app.run()
+	await get_dashboard().app.run_async()
+
+asyncio.run(main())

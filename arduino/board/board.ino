@@ -288,14 +288,14 @@ void led_set_pallete_fail() // ID: 0
 
 void led_set_pallete_bootup() // ID: 1
 {
-	led_set_animation_blink_and_spin();
-	led_palette = RainbowColors_p;
+	led_set_animation_spin();
+	led_palette = RainbowStripeColors_p;
 }
 
 void led_set_pallete_getting_ready() // ID: 2
 {
-	led_set_animation_spin();
-	led_palette = RainbowStripeColors_p;
+	led_set_animation_blink_and_spin();
+	led_palette = RainbowColors_p;
 }
 
 void led_set_pallete_ready() // ID: 3
