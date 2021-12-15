@@ -10,14 +10,23 @@ Dashboard UI (through prompt_toolkit) uses an asyncio event loop for non-blockin
 GameController (through PySerial) uses almost-exclusively blocking IO. Moving the GameController to
 a separate thread was far easier than re-writing it to use asyncio.
 """
+import asyncio
 from collections import deque
 from typing import *
 from sys import exit
 import chess
 from threading import Thread, Lock
-from game_controller import GameController
+from game_controller import GameController, State
 from arduino_manager import Button, LEDPallete
 from helpers import print_to_dashboard as print, show_image
+
+GAME_STATE_STATUSLINE_COLORS: Dict[State, str] = {
+	(State.STARTING): 'ansiblack bg:ansigray',
+	(State.READY): 'bg:ansigreen',
+	(State.HUMAN_TURN): 'bg:#FF69B4',
+	(State.COMPUTER_TURN): 'ansiblack bg:#66AAFF',
+	(State.ERROR): 'bg:ansired',
+}
 
 class DashboardDelegate:
 	"""
@@ -27,20 +36,28 @@ class DashboardDelegate:
 	run it in a background thread.
 	"""
 	game: GameController
+	show_image: Callable
 	
-	def __init__(self, game: GameController) -> None:
+	def __init__(self, game: GameController, show_image: Callable) -> None:
 		self.game = game
+		self.show_image = show_image
 	
 	def make_statusline(self) -> str:
 		"""
 		Generate a statusline for the bottom right of the Dashboard window.
 		"""
 		self.game.arduino.update()
-		return ' / '.join(' '.join(str(a) for a in x) for x in [
-			("State:", self.game.state.name),
-			("Gantry:", self.game.arduino.gantry_pos),
-			("Magnet:", 'ON' if self.game.arduino.electromagnet_enabled else 'OFF'),
-		])
+
+		if self.game.state == State.STARTING:
+			text = 'Starting...'
+		else:
+			text = ' / '.join(' '.join(str(a) for a in x) for x in [
+				("State:", self.game.state.name),
+				("Gantry:", self.game.arduino.gantry_pos),
+				("Magnet:", 'ON' if self.game.arduino.electromagnet_enabled else 'OFF'),
+			])
+
+		return GAME_STATE_STATUSLINE_COLORS.get(self.game.state, 'ansiblack bg:ansiwhite'), text
 
 	def execute_command(self, command: str):
 		"""
@@ -76,10 +93,10 @@ class DashboardDelegate:
 				return
 			print("Recognizing board...")
 			try:
-				positions = self.game.detector.detect_piece_positions(img, show=True)
+				positions = self.game.detector.detect_piece_positions(img, show=self.show_image)
 				board = self.game.detector.generate_board(positions)
 			except Exception as err:
-				show_image(img)  # If we couldn't show the annotated version, show the raw version
+				self.show_image(img, 'Failed to Detect Piece Positions:')  # If we couldn't show the annotated version, show the raw version
 				print("Failed to detect piece positions:", err)
 				return
 			# See comment in game_controller.py for why we show the question upside-down
@@ -101,29 +118,41 @@ class DashboardDelegateThread(Thread):
 	# This is an extremely primitive cross-thread communication system, but it's good enough for now
 	# and the Dashboard is such a small part of the overal product that it wasn't worth investing in.
 	status_line: str = 'Loading...'
+	status_line_color: str = 'bg:ansigray'
 	status_line_stale: bool = True
 	commands: deque  # (de)queue of commands to execute
 	# We aquire this lock when the thread starts and release it when the game controller is ready.
 	wait_for_ready: Lock
+	# A reference to the main thread's event loop
+	# THE ONLY VALID USE FOR THIS IS CALLING call_soon_threadsafe
+	main_thread_loop: asyncio.AbstractEventLoop
 
-	def __init__(self):
-		super().__init__()
+	def __init__(self, main_thread_loop: asyncio.AbstractEventLoop, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 		self.commands = deque()
 		self.wait_for_ready = Lock()
+		self.main_thread_loop = main_thread_loop
 
 	def get_status_line(self):
 		self.status_line_stale = True
 		return self.status_line
+	
+	def get_status_line_color(self):
+		# Don't mark the status line as stale if we just get the color
+		return self.status_line_color
+
+	def show_image(self, *args, **kwargs):
+		self.main_thread_loop.call_soon_threadsafe(lambda: show_image(*args, **kwargs))
 
 	def run(self):
 		with self.wait_for_ready:
-			delegate = DashboardDelegate(GameController())
+			delegate = DashboardDelegate(GameController(), show_image=self.show_image)
 			delegate.game.arduino.update()  # Initialize data
 
 		while True:
 			# HACK: only generate status line updates when needed
 			if self.status_line_stale:
-				self.status_line = delegate.make_statusline()
+				self.status_line_color, self.status_line = delegate.make_statusline()
 			# arduino.update() listens for and dispatches button presses, therefore triggering all
 			# real activity
 			delegate.game.arduino.update()

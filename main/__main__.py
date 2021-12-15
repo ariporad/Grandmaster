@@ -11,7 +11,7 @@ print(GRANDMASTER_ASCII_ART)
 print("Connecting...")
 
 async def main():
-	thread = DashboardDelegateThread()
+	thread = DashboardDelegateThread(main_thread_loop=asyncio.get_running_loop())
 	thread.start()
 
 	# Wait for the thread to be ready, but don't hold the lock

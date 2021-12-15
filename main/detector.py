@@ -1,3 +1,4 @@
+from subprocess import call
 from typing import *
 from helpers import print_to_dashboard as print, show_image
 from enum import IntEnum
@@ -93,7 +94,7 @@ class Detector:
 
         return board
 
-    def detect_piece_positions(self, img, show=False):
+    def detect_piece_positions(self, img, show: Union[bool, Callable]=False):
         """
         Run the computer vision pipeline to determine the position of each piece on the board in
         chess-space from a picture of it.
@@ -109,7 +110,7 @@ class Detector:
         # These are the four squares around the center of the chessboard
         board_center = np.mean([squares['d4'], squares['d5'], squares['e4'], squares['e5']], axis=0)
 
-        if show:
+        if show is not False:
             # Very hack-y code to annotate the image with helpful information
             bottom_right_I0 = tags[self.CORNER_I0_TAG_ID].center
             bottom_left_a0 = tags[self.CORNER_a0_TAG_ID].center
@@ -137,7 +138,9 @@ class Detector:
                 y = round(pos[1])
                 img[y-10:y+11, x-10:x+11, :] = [255, 0, 0]
             
-            show_image(img)
+            if not callable(show):
+                show = show_image
+            show(img, 'Analyzed Board:')
 
         # We process piece tags in descending order of distance from the center. This is because our
         # camera has a fisheye lens, and so pieces (especially tall pieces) that are near the edge

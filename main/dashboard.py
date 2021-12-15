@@ -1,9 +1,6 @@
-import asyncio
-from cv2 import waitKey
+from datetime import datetime
 from prompt_toolkit import Application
 from prompt_toolkit.buffer import Buffer
-from prompt_toolkit.completion import NestedCompleter
-from prompt_toolkit.completion.base import Completer
 from prompt_toolkit.formatted_text.base import FormattedText
 from prompt_toolkit.key_binding.key_bindings import KeyBindings
 from prompt_toolkit.layout.containers import HSplit, VSplit, Window
@@ -91,11 +88,11 @@ class Dashboard:
 	@property
 	def status_window(self) -> Window:
 		return VSplit(
-			style='bg:ansiblue',
+			style=lambda: self.delegate_thread.get_status_line_color(),
 			children=[
-				Window(FormattedTextControl("Grandmaster OK")),
+				Window(FormattedTextControl(lambda: ' ' + datetime.now().strftime("%-I:%M:%S %p"))),
 				Window(
-					FormattedTextControl(text=(lambda: self.delegate_thread.get_status_line()), show_cursor=False, focusable=False),
+					FormattedTextControl(text=(lambda: self.delegate_thread.get_status_line() + ' '), show_cursor=False, focusable=False),
 					dont_extend_height=True,
 					dont_extend_width=True
 				)

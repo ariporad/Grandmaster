@@ -39,7 +39,7 @@ def print_to_dashboard(*args):
     else:
         dashboard.print(*args)
 
-def show_image(img):
+def show_image(img, title="Image:"):
     """
     Display an image to the user. If available, uses iTerm 2's imgcat functionality. [1]
     Otherwise, opens a window using OpenCV.
@@ -48,10 +48,11 @@ def show_image(img):
     prompt_toolkit application while executing.
     """
     if not has_imgcat:
-        cv2.imshow(img)
+        cv2.imshow(title, img)
         cv2.waitKey(0)
     else:
         def _show_image():
+            print(title)
             imgcat(img)
             input("Press ENTER to continue... ")
         run_in_terminal(_show_image)
