@@ -1,9 +1,16 @@
 from typing import *
 from helpers import print_to_dashboard as print
 import serial
-from time import sleep
+from time import sleep, time
 from enum import Enum, IntEnum, unique
 import serial.tools.list_ports
+
+ARDUINO_STARTUP_WAIT = 2
+"""
+Arduinos reset when a serial connection is established, so we can't use them immediately.
+
+We wait this many seconds before attempting to use an Arduino.
+"""
 
 @unique
 class Device(Enum):
@@ -29,9 +36,6 @@ class Arduino:
 				break
 		else:
 			raise IOError(f"Couldn't find Arduino! ({device})")
-
-		# Arduinos reset on connection, so give it a minute to boot up
-		sleep(5)
 
 	def write(self, data: int):
 		"""
@@ -102,11 +106,32 @@ class ArduinoManager:
 	handlers: Dict[Button, Callable]
 	""" Mapping of handlers to be invoked when a button becomes pressed. """
 
-	def __init__(self, button_handlers: Dict[Button, Callable] = {}):
+	on_ready: Callable
+	""" Function to be called once all devices are ready. """
+
+	is_ready: bool = False
+	""" We are ready once we've gotten at least one status update from each device. """
+
+	is_gantry_ready: bool = False
+	is_board_ready: bool = False
+
+	startup_wait_timeout: int
+	"""
+	Arduinos reset when a serial connection is established, so we can't use them immediately.
+
+	At creation time, this is set to the time (in seconds since the epoch, same format as time.time())
+	at which the Arduinos are safe to use. Currently, this is a 2 second delay (see ARDUINO_STARTUP_WAIT).
+
+	We will never be ready before this time, although we're not guaranteed to be ready at that point.
+	"""
+
+	def __init__(self, on_ready: Callable = lambda: None, button_handlers: Dict[Button, Callable] = {}):
 		self.gantry = Arduino(Device.GANTRY)
 		self.board = Arduino(Device.BOARD)
 		self.buttons = {button: False for button in Button}
 		self.handlers = button_handlers
+		self.on_ready = on_ready
+		self.startup_wait_timeout = time() + ARDUINO_STARTUP_WAIT
 
 	def on_button_press(self, button: Button, handler: Callable):
 		"""
@@ -125,6 +150,7 @@ class ArduinoManager:
 		File is accepted as an integer for simplicity, and to allow accessing the graveyard: The
 		normal files (A-H) are 0-7, respectively, and the graveyard is files 8-9.
 		"""
+		self._assert_ready()
 		self.gantry.write(((x + 1) << 4) | (y + 1))
 		if block:
 			while self.gantry_pos != (x, y):
@@ -134,6 +160,7 @@ class ArduinoManager:
 		"""
 		Enable/Disable the electromagnet. If block=True, this method will block until that has been done.
 		"""
+		self._assert_ready()
 		self.board.write(0b110 if enabled else 0b010)
 		if block:
 			while self.electromagnet_enabled != enabled:
@@ -143,6 +170,7 @@ class ArduinoManager:
 		"""
 		Set the LEDs around the board to a specific pallete.
 		"""
+		self._assert_ready()
 		self.board.write((int(pallete) << 2) | 0b11)
 
 	def set_button_light(self, button: Button, enabled: bool, others: Optional[bool]=None):
@@ -150,6 +178,7 @@ class ArduinoManager:
 		Set the light ring around a button. If other is set to a boolean, all other button LEDs will
 		be set to that value.
 		"""
+		self._assert_ready()
 		self.board.write((int(enabled) << 4) | (button << 2) | 0b01)
 		if others is not None:
 			for button in (b for b in Button if b != button):
@@ -161,7 +190,13 @@ class ArduinoManager:
 
 		If any buttons are newly pressed, this will trigger appropriate handlers.
 		"""
+		# Don't do anything if the Arduinos aren't ready yet.
+		if self.startup_wait_timeout > time():
+			return
+
 		for message in self.board.read():
+			if message == 0: continue
+			self.is_board_ready = True
 			for button in Button:
 				pressed = bool(message & (1 << button))
 				change = pressed != self.buttons[button]
@@ -174,10 +209,21 @@ class ArduinoManager:
 			self.electromagnet_enabled = bool(message & (1 << 4))
 
 		for message in self.gantry.read():
+			if message == 0: continue
+			self.is_gantry_ready = True
 			message = message & 0xFF
 			x = (message >> 4) - 1
 			y = (message & 0xF) - 1
 			self.gantry_pos = (x, y)
+		
+		if self.is_board_ready and self.is_gantry_ready and not self.is_ready:
+			self.is_ready = True
+			self.on_ready()
+			self.on_ready = None
+	
+	def _assert_ready(self):
+		if not self.is_ready:
+			raise IOError("Arduinos aren't ready yet!")
 
 
 

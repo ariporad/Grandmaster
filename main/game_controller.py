@@ -12,6 +12,7 @@ from detector import Detector
 from arduino_manager import ArduinoManager, Button, LEDPallete
 
 class State(Enum):
+	STARTING = 'STARTING'
 	READY = 'READY'
 	HUMAN_TURN = 'HUMAN_TURN'
 	COMPUTER_TURN = 'COMPUTER_TURN'
@@ -22,20 +23,19 @@ class GameController:
 	The GameController is the brain of the entire Grandmaster Chess Board. It's responsible for
 	coordinating all subsystems and for all high-level logic.
 	"""
-	state: State = State.READY
+	state: State = State.STARTING
 	arduino: ArduinoManager
 	autoplay: bool = False
 
 	def __init__(self):
 		self.detector = Detector()
-		self.arduino = ArduinoManager({
+		self.arduino = ArduinoManager(self.enter_ready_state, {
 			(Button.PLAYER): self.play_computer_turn,
 			# For ease of debugging, the computer button behaves the same as the player button
 			(Button.COMPUTER): self.play_computer_turn,
 			(Button.FUN): lambda: self.set_autoplay(True),
 			(Button.START): self.start
 		})
-		self.enter_ready_state()
 	
 	def set_autoplay(self, autoplay: bool):
 		"""
@@ -55,7 +55,6 @@ class GameController:
 		"""
 		Put the board into a ready-to-play state.
 		"""
-		print("Entering ready mode...")
 		self.state = State.READY
 		self.autoplay = False
 		self.arduino.set_button_light(Button.START, True, others=False)
