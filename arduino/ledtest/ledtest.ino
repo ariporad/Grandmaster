@@ -1,3 +1,8 @@
+/**
+ * This file is a test bed for getting the LED patterns right.
+ * 
+ * It is no longer used. See board.ino for its successor.
+ */
 #include <FastLED.h>
 
 #define LED_PIN 3

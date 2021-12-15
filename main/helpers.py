@@ -1,5 +1,4 @@
 import cv2
-import threading
 from typing import *
 from math import inf, sqrt
 from dashboard import get_dashboard
@@ -13,6 +12,9 @@ except ImportError:
 	pass
 
 def distance(a: Tuple, b: Tuple):
+    """
+    Calculate the Euclidian distance between a and b.
+    """
     assert len(a) == len(b)
     sum_squares = 0
     for a_item, b_item in zip(a, b):
@@ -21,6 +23,16 @@ def distance(a: Tuple, b: Tuple):
 
 # In this file to avoid circular imports
 def print_to_dashboard(*args):
+    """
+    This function works exactly like the builtin print(), except that it properly routes output to
+    the Dashboard if it's running. If not, it invokes normal print.
+
+    You should use this for all logging. You can even import it over built-in print:
+    
+    ```python3
+    from helpers import print_to_dashboard as print
+    ```
+    """
     dashboard = get_dashboard()
     if dashboard is None:
         print(*args)
@@ -28,10 +40,14 @@ def print_to_dashboard(*args):
         dashboard.print(*args)
 
 def show_image(img):
+    """
+    Display an image to the user. If available, uses iTerm 2's imgcat functionality. [1]
+    Otherwise, opens a window using OpenCV.
+
+    This method waits for user input (press enter) to return. For imgcat, it suspends the
+    prompt_toolkit application while executing.
+    """
     if not has_imgcat:
-        if threading.current_thread() is not threading.main_thread():
-            print("ERROR: Can't use OpenCV from non-main thread. Skipping image...")
-            return
         cv2.imshow(img)
         cv2.waitKey(0)
     else:

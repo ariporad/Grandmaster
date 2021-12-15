@@ -1,12 +1,16 @@
 import cv2
 from helpers import print_to_dashboard as print
 from os.path import dirname, join
-from calibrate import CameraCalibration
+from camera_calibration import CameraCalibration
 
 class CameraError(Exception):
     pass
 
 class Camera:
+    """
+    Light wrapper around OpenCV's camera APIs to make them slightly nicer to use, and to integrate
+    calibration and distortion correction.
+    """
     camera: cv2.VideoCapture
     calibration: CameraCalibration
 
@@ -26,6 +30,10 @@ class Camera:
         return self.calibration.height
 
     def capture_frame(self):
+        """
+        Capture a frame from the camera. Image is guaranteed to be captured while this method is
+        executing (ie. not buffered).
+        """
         # There's an annoying frame buffer we want to drain
         for _ in range(1):
             self.camera.read()

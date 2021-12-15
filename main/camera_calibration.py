@@ -34,14 +34,11 @@ class CameraCalibration:
             return cls(np.array(data['camera_matrix']), np.array(data['distortion']), data['width'], data['height'])
 
 
-# From: https://www.geeksforgeeks.org/camera-calibration-with-python-opencv/
-
-# TODO: need to calibrate on the same size image as the real thing, which means bigger chessboard
-
-
 def calibrate(images, draw=False):
     """
     Calibrate a camera from some test images.
+
+    This approach is from: https://www.geeksforgeeks.org/camera-calibration-with-python-opencv/
     """
     # Define the dimensions of checkerboard
     CHESSBOARD_SIZE_SQUARES = (6, 9)

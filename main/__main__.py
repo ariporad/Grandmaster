@@ -1,6 +1,8 @@
+"""
+The entry point to the Game Controller. Run this file (usually in the form of `python3 main`) to
+start the server.
+"""
 import asyncio
-import threading
-from game_controller import GameController
 from dashboard_delegate import DashboardDelegateThread
 from dashboard import configure_dashboard, get_dashboard, GRANDMASTER_ASCII_ART
 
@@ -8,11 +10,10 @@ print(GRANDMASTER_ASCII_ART)
 
 print("Connecting...")
 
-async def main():
+def main():
 	thread = DashboardDelegateThread()
 	thread.start()
 
-	print("Waiting...")
 	# Wait for the thread to be ready, but don't hold the lock
 	thread.wait_for_ready.acquire()
 	thread.wait_for_ready.release()
@@ -20,6 +21,4 @@ async def main():
 
 	configure_dashboard(thread)
 
-	await get_dashboard().app.run_async()
-
-asyncio.run(main())
+	get_dashboard.app.run()
